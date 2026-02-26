@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { CheckCircle, Edit, Target, Plus, Send } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
 
 const aryanAvatar = PlaceHolderImages.find((img) => img.id === 'family-son');
 
@@ -43,7 +44,7 @@ export default function ProfilePage() {
             <p className="text-muted-foreground">रुचियां: भौतिकी, खगोल विज्ञान, क्रिकेट</p>
             <p className="text-muted-foreground">धर्म: हिंदू (जिज्ञासु)</p>
           </div>
-          <Button variant="outline"><Edit className="mr-2 h-4 w-4" />प्रोफाइल संपादित करें</Button>
+          <Button variant="outline" asChild><Link href="#"><Edit className="mr-2 h-4 w-4" />प्रोफाइल संपादित करें</Link></Button>
         </CardContent>
       </Card>
       
@@ -58,7 +59,7 @@ export default function ProfilePage() {
                     <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
                         {content.items.map(item => <li key={item}>{item}</li>)}
                     </ul>
-                    <Button variant="link" className="p-0 h-auto">और पढ़ें</Button>
+                    <Button variant="link" className="p-0 h-auto" asChild><Link href="#">और पढ़ें</Link></Button>
                     <Separator className="mt-4"/>
                 </div>
             ))}
@@ -76,12 +77,14 @@ export default function ProfilePage() {
                         <Target className="h-5 w-5 text-primary"/>
                         <p>{goal}</p>
                     </div>
-                    <Button variant="ghost" size="sm"><CheckCircle className="mr-2 h-4 w-4"/>ट्रैक करें</Button>
+                    <Button variant="ghost" size="sm" asChild><Link href="#"><CheckCircle className="mr-2 h-4 w-4"/>ट्रैक करें</Link></Button>
                 </div>
             ))}
             <div className="pt-4">
-                <Button variant="outline" className="w-full">
-                    <Plus className="mr-2 h-4 w-4"/> नया लक्ष्य जोड़ें
+                <Button variant="outline" className="w-full" asChild>
+                    <Link href="#">
+                      <Plus className="mr-2 h-4 w-4"/> नया लक्ष्य जोड़ें
+                    </Link>
                 </Button>
             </div>
         </CardContent>
@@ -109,8 +112,8 @@ export default function ProfilePage() {
                 </div>
             </div>
             <div className="flex justify-center gap-4">
-                <Button>हाँ, कर्म पर</Button>
-                <Button variant="outline">नहीं, और पूछना है</Button>
+                <Button asChild><Link href="#">हाँ, कर्म पर</Link></Button>
+                <Button variant="outline" asChild><Link href="#">नहीं, और पूछना है</Link></Button>
             </div>
         </CardContent>
       </Card>

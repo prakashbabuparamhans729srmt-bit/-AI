@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Puzzle, Paintbrush, Music, HelpCircle, Book, Drama } from 'lucide-react';
+import Link from 'next/link';
 
 const activities = [
   { icon: <Puzzle />, label: 'नैतिकता पहेली' },
@@ -41,9 +42,9 @@ export default function KidsCornerPage() {
             <div className="text-yellow-300 text-4xl">⭐⭐⭐⭐⭐</div>
             <h2 className="text-3xl font-bold font-headline">आज की कहानी: ईमानदार लकड़हारा</h2>
             <div className="flex justify-center gap-4">
-                <Button>कहानी सुनें</Button>
-                <Button variant="secondary">खुद पढ़ें</Button>
-                <Button variant="outline" className="text-white border-white">रंग भरें</Button>
+                <Button asChild><Link href="#">कहानी सुनें</Link></Button>
+                <Button variant="secondary" asChild><Link href="#">खुद पढ़ें</Link></Button>
+                <Button variant="outline" className="text-white border-white" asChild><Link href="#">रंग भरें</Link></Button>
             </div>
         </div>
       </Card>
@@ -54,10 +55,12 @@ export default function KidsCornerPage() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {activities.map((activity, index) => (
-            <Card key={index} className="flex flex-col items-center justify-center p-4 text-center hover:bg-accent/50 hover:shadow-lg transition-all cursor-pointer h-32">
+            <Link href="#" key={index}>
+            <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-accent/50 hover:shadow-lg transition-all cursor-pointer h-32">
               <div className="text-primary mb-2 text-4xl">{activity.icon}</div>
               <p className="font-semibold text-sm md:text-base">{activity.label}</p>
             </Card>
+            </Link>
           ))}
         </CardContent>
       </Card>
@@ -73,7 +76,7 @@ export default function KidsCornerPage() {
                     <span className="font-bold">{group.age}: </span>
                     <span>{group.story}</span>
                 </div>
-              <Button variant="ghost">देखें ►</Button>
+              <Button variant="ghost" asChild><Link href="#">देखें ►</Link></Button>
             </div>
           ))}
         </CardContent>
@@ -93,8 +96,8 @@ export default function KidsCornerPage() {
             </div>
             <p className="text-muted-foreground mb-4">धार्मिक प्रतीक</p>
             <div className="flex justify-center gap-4">
-                <Button variant="outline">पृष्ठ डाउनलोड करें</Button>
-                <Button>रंग भरें ऑनलाइन</Button>
+                <Button variant="outline" asChild><Link href="#">पृष्ठ डाउनलोड करें</Link></Button>
+                <Button asChild><Link href="#">रंग भरें ऑनलाइन</Link></Button>
             </div>
         </CardContent>
       </Card>
@@ -110,7 +113,7 @@ export default function KidsCornerPage() {
             <li>प्रश्न पूछने दें</li>
             <li>उदाहरण देकर समझाएं</li>
           </ul>
-          <Button variant="link" className="mt-2 p-0">और सुझाव पढ़ें</Button>
+          <Button variant="link" className="mt-2 p-0" asChild><Link href="#">और सुझाव पढ़ें</Link></Button>
         </CardContent>
       </Card>
     </div>

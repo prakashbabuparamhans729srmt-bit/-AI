@@ -21,31 +21,37 @@ const featureList = [
     icon: <BookOpen className="h-8 w-8" />,
     title: 'सभी धर्म एक मंच पर',
     description: 'विभिन्न धर्मों के ज्ञान और शिक्षाओं को एक ही स्थान पर खोजें।',
+    href: '/knowledge-hub'
   },
   {
     icon: <Sparkles className="h-8 w-8" />,
     title: 'दैनिक मार्गदर्शन',
     description: 'अपने और अपने परिवार के लिए व्यक्तिगत दैनिक विचार और प्रेरणा प्राप्त करें।',
+    href: '/dashboard'
   },
   {
     icon: <LifeBuoy className="h-8 w-8" />,
     title: 'संकट परामर्श',
     description: 'कठिन समय में एआई गुरु से सहानुभूतिपूर्ण और तत्काल सहायता प्राप्त करें।',
+    href: '/crisis-counseling'
   },
   {
     icon: <HeartHandshake className="h-8 w-8" />,
     title: 'ध्यान और योग',
     description: 'शांति और मानसिक स्पष्टता के लिए निर्देशित ध्यान और योग सत्र।',
+    href: '#'
   },
   {
     icon: <Users className="h-8 w-8" />,
     title: 'परिवार प्रोफाइल',
     description: 'प्रत्येक सदस्य की आध्यात्मिक यात्रा को समझने के लिए परिवार प्रोफाइल बनाएं।',
+    href: '/profile'
   },
   {
     icon: <BrainCircuit className="h-8 w-8" />,
     title: '24x7 AI सहायक',
     description: 'आपके आध्यात्मिक प्रश्नों का उत्तर देने के लिए हमारा एआई गुरु हमेशा उपलब्ध है।',
+    href: '/community'
   },
 ];
 
@@ -110,8 +116,8 @@ export default function Home() {
                 <Button size="lg" asChild>
                   <Link href="/register">निःशुल्क पंजीकरण करें</Link>
                 </Button>
-                <Button size="lg" variant="secondary">
-                  वीडियो देखें
+                <Button size="lg" variant="secondary" asChild>
+                  <Link href="#">वीडियो देखें</Link>
                 </Button>
               </div>
             </div>
@@ -132,18 +138,20 @@ export default function Home() {
               </div>
             </div>
             <div className="mx-auto grid max-w-5xl grid-cols-2 items-start gap-8 py-12 sm:grid-cols-3 md:gap-12 lg:max-w-none lg:grid-cols-3">
-              {featureList.map((feature, index) => (
-                <Card key={index} className="text-center transition-transform transform hover:scale-105 hover:shadow-xl">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="rounded-full bg-primary/10 p-4 text-primary">
-                        {feature.icon}
+              {featureList.map((feature) => (
+                <Link href={feature.href} key={feature.title}>
+                  <Card className="text-center transition-transform transform hover:scale-105 hover:shadow-xl h-full">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center space-y-4">
+                        <div className="rounded-full bg-primary/10 p-4 text-primary">
+                          {feature.icon}
+                        </div>
+                        <h3 className="text-xl font-bold font-headline">{feature.title}</h3>
+                        <p className="text-foreground/80">{feature.description}</p>
                       </div>
-                      <h3 className="text-xl font-bold font-headline">{feature.title}</h3>
-                      <p className="text-foreground/80">{feature.description}</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
@@ -201,7 +209,8 @@ export default function Home() {
               आज ही अपनी आध्यात्मिक यात्रा शुरू करें।
             </p>
             <div className="mt-8 flex justify-center gap-4">
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="outline" asChild>
+                <Link href="#">
                 <svg
                   className="mr-2 h-6 w-6"
                   viewBox="0 0 24 24"
@@ -210,8 +219,10 @@ export default function Home() {
                   <path d="M16.19 2.81a3.53 3.53 0 00-3.53 3.53v11.32a3.53 3.53 0 003.53 3.53 3.5 3.5 0 002.6-1.04l-3.3-3.3a.7.7 0 010-1l3.3-3.29a3.5 3.5 0 00-2.6-1.02zM12.66 6.34a3.52 3.52 0 01-2.6 1L3.3 14.1a.7.7 0 000 1l6.76 6.76a3.52 3.52 0 012.6 1 3.53 3.53 0 003.53-3.53V9.87a3.53 3.53 0 00-3.53-3.53z" />
                 </svg>
                 गूगल प्ले
+                </Link>
               </Button>
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="outline" asChild>
+                <Link href="#">
                 <svg
                   className="mr-2 h-6 w-6"
                   viewBox="0 0 24 24"
@@ -220,6 +231,7 @@ export default function Home() {
                   <path d="M17.63 20.31a9.5 9.5 0 01-5.69 2.19c-1.85 0-3.29-.63-4.42-1.89-1.13-1.26-1.9-3.03-1.9-5.32 0-2.43.8-4.24 2-5.41 1.2-1.17 2.7-1.76 4.5-1.76 1.73 0 3.12.55 4.18 1.65l-2.3 2.2a2.8 2.8 0 00-1.98-.82c-1.13 0-2.01.4-2.65 1.18-.64.78-.96 1.83-.96 3.14s.32 2.36.96 3.14c.64.78 1.52 1.17 2.65 1.17a2.9 2.9 0 002.1-.85l2.42 2.3zM18.8 3a2 2 0 012 2v.67a2 2 0 00-1.4 1.83 2 2 0 001.4 1.83V10a2 2 0 01-2 2h-.2a6.9 6.9 0 01-3.6-1.1C13.8 10 13 8.7 13 7.3c0-1.9 1.2-3.4 3-3.8V3h2.8z" />
                 </svg>
                 ऐप स्टोर
+                </Link>
               </Button>
             </div>
           </div>

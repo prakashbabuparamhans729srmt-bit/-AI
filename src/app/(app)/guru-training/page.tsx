@@ -4,6 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Search, Star, Calendar, FileText } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
 
 
 const curriculum = [
@@ -36,8 +37,8 @@ export default function GuruTrainingPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center gap-4">
-                    <Button variant="default" size="lg" className="bg-white text-secondary hover:bg-gray-100">आवेदन करें</Button>
-                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10">जानकारी लें</Button>
+                    <Button variant="default" size="lg" className="bg-white text-secondary hover:bg-gray-100" asChild><Link href="#">आवेदन करें</Link></Button>
+                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10" asChild><Link href="#">जानकारी लें</Link></Button>
                 </CardContent>
             </Card>
 
@@ -50,9 +51,11 @@ export default function GuruTrainingPage() {
                         <div key={item.year} className="space-y-3 p-4 border rounded-lg">
                            <div className="flex justify-between items-center">
                              <h3 className="font-bold text-lg">🕉️ वर्ष {item.year}: {item.title}</h3>
-                             <Button variant={item.progress === 100 ? "secondary" : "default"} size="sm">
-                                {item.progress === 100 && <FileText className="mr-2 h-4 w-4" />}
-                                {item.status}
+                             <Button variant={item.progress === 100 ? "secondary" : "default"} size="sm" asChild>
+                                <Link href="#">
+                                  {item.progress === 100 && <FileText className="mr-2 h-4 w-4" />}
+                                  {item.status}
+                                </Link>
                             </Button>
                            </div>
                            <ul className="list-disc pl-5 text-muted-foreground">
@@ -97,7 +100,7 @@ export default function GuruTrainingPage() {
                         ))}
                     </div>
                     <div className="text-center pt-6">
-                        <Button variant="outline">सभी देखें</Button>
+                        <Button variant="outline" asChild><Link href="#">सभी देखें</Link></Button>
                     </div>
                 </CardContent>
             </Card>
@@ -117,7 +120,7 @@ export default function GuruTrainingPage() {
                         </div>
                     ))}
                     <div className="text-center pt-4">
-                        <Button>पंजीकरण करें</Button>
+                        <Button asChild><Link href="#">पंजीकरण करें</Link></Button>
                     </div>
                 </CardContent>
             </Card>

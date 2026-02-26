@@ -6,6 +6,8 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ArrowRight, Calendar, MessageSquare, BookOpen, HeartPulse, Sparkles, Hand, Users, Send } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
+import { Label } from '@/components/ui/label';
 
 const familyMembers = [
   { name: 'राजेश', role: 'पिता', avatarId: 'family-father' },
@@ -15,12 +17,12 @@ const familyMembers = [
 ];
 
 const quickServices = [
-  { icon: <MessageSquare className="h-8 w-8" />, label: 'प्रश्न पूछें' },
-  { icon: <HeartPulse className="h-8 w-8" />, label: 'संकट परामर्श' },
-  { icon: <Sparkles className="h-8 w-8" />, label: 'आज की कथा' },
-  { icon: <BookOpen className="h-8 w-8" />, label: 'धर्म ग्रंथ अध्ययन' },
-  { icon: <Hand className="h-8 w-8" />, label: 'संस्कार मार्गदर्शन' },
-  { icon: <Users className="h-8 w-8" />, label: 'बच्चों के लिए विशेष' },
+  { icon: <MessageSquare className="h-8 w-8" />, label: 'प्रश्न पूछें', href: '/community' },
+  { icon: <HeartPulse className="h-8 w-8" />, label: 'संकट परामर्श', href: '/crisis-counseling' },
+  { icon: <Sparkles className="h-8 w-8" />, label: 'आज की कथा', href: '/kids-corner' },
+  { icon: <BookOpen className="h-8 w-8" />, label: 'धर्म ग्रंथ अध्ययन', href: '/knowledge-hub' },
+  { icon: <Hand className="h-8 w-8" />, label: 'संस्कार मार्गदर्शन', href: '/rules' },
+  { icon: <Users className="h-8 w-8" />, label: 'बच्चों के लिए विशेष', href: '/kids-corner' },
 ];
 
 export default function DashboardPage() {
@@ -44,8 +46,8 @@ export default function DashboardPage() {
               <p className="mt-2 text-right text-muted-foreground">- श्रीमद्भगवद्गीता</p>
             </CardContent>
             <CardFooter className="gap-2">
-              <Button>इस पर चिंतन करें</Button>
-              <Button variant="secondary">साझा करें</Button>
+              <Button asChild><Link href="#">इस पर चिंतन करें</Link></Button>
+              <Button variant="secondary" asChild><Link href="#">साझा करें</Link></Button>
             </CardFooter>
           </Card>
 
@@ -54,10 +56,12 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold font-headline mb-4">🔍 त्वरित सेवाएं</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {quickServices.map((service, index) => (
-                <Card key={index} className="flex flex-col items-center justify-center p-4 text-center hover:bg-accent/50 hover:shadow-lg transition-all cursor-pointer">
-                  <div className="text-primary mb-2">{service.icon}</div>
-                  <p className="font-semibold">{service.label}</p>
-                </Card>
+                <Link href={service.href} key={index}>
+                  <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-accent/50 hover:shadow-lg transition-all cursor-pointer h-full">
+                    <div className="text-primary mb-2">{service.icon}</div>
+                    <p className="font-semibold">{service.label}</p>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
@@ -77,6 +81,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Separator />
+              <form>
                <div className="flex w-full items-center space-x-2">
                 <Input type="text" placeholder="यहाँ लिखें..." className="flex-1" />
                 <Button type="submit">
@@ -84,6 +89,7 @@ export default function DashboardPage() {
                   <span className="sr-only">भेजें</span>
                 </Button>
               </div>
+              </form>
             </CardContent>
           </Card>
         </div>
@@ -106,7 +112,9 @@ export default function DashboardPage() {
                     </Avatar>
                     <p className="font-semibold">{member.name}</p>
                     <p className="text-xs text-muted-foreground">{member.role}</p>
-                    <Button variant="outline" size="sm">देखें</Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/profile">देखें</Link>
+                    </Button>
                   </div>
                 );
               })}
@@ -128,9 +136,11 @@ export default function DashboardPage() {
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="ghost">याद दिलाएं</Button>
-              <Button variant="link">
-                सभी देखें <ArrowRight className="ml-2 h-4 w-4" />
+              <Button variant="ghost" asChild><Link href="#">याद दिलाएं</Link></Button>
+              <Button variant="link" asChild>
+                <Link href="#">
+                  सभी देखें <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
               </Button>
             </CardFooter>
           </Card>
@@ -155,7 +165,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full">सुधार के सुझाव</Button>
+              <Button variant="secondary" className="w-full" asChild><Link href="#">सुधार के सुझाव</Link></Button>
             </CardFooter>
           </Card>
         </div>

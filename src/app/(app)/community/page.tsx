@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Calendar, Plus, Search, ThumbsUp } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
 
 
 const topics = [
@@ -35,9 +36,11 @@ export default function CommunityPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input placeholder="विषय या प्रश्न खोजें..." className="pl-10 h-11" />
           </div>
-          <Button className="w-full md:w-auto">
-            <Plus className="mr-2 h-5 w-5" />
-            नया विषय शुरू करें
+          <Button className="w-full md:w-auto" asChild>
+            <Link href="#">
+              <Plus className="mr-2 h-5 w-5" />
+              नया विषय शुरू करें
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -53,7 +56,7 @@ export default function CommunityPage() {
               <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
                 <span>उत्तर: {topic.answers}</span>
                 <span>टिप्पणियाँ: {topic.comments}</span>
-                <Button variant="secondary" size="sm">पढ़ें</Button>
+                <Button variant="secondary" size="sm" asChild><Link href="#">पढ़ें</Link></Button>
               </div>
             </div>
           ))}
@@ -97,8 +100,8 @@ export default function CommunityPage() {
             </div>
           ))}
           <div className="flex justify-center gap-4 pt-4">
-              <Button>शामिल हों</Button>
-              <Button variant="outline">याद दिलाएं</Button>
+              <Button asChild><Link href="#">शामिल हों</Link></Button>
+              <Button variant="outline" asChild><Link href="#">याद दिलाएं</Link></Button>
           </div>
         </CardContent>
       </Card>

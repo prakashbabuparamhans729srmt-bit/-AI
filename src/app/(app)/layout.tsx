@@ -13,6 +13,7 @@ import {
 import { Logo } from '@/components/logo';
 import { MainNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
+import Link from 'next/link';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -43,9 +44,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             <div className="flex flex-1 items-center justify-end space-x-4">
               <nav className="flex items-center space-x-1">
-                <Button variant="ghost" size="icon">
-                  <Bell className="h-5 w-5" />
-                  <span className="sr-only">Notifications</span>
+                <Button variant="ghost" size="icon" asChild>
+                  <Link href="#">
+                    <Bell className="h-5 w-5" />
+                    <span className="sr-only">Notifications</span>
+                  </Link>
                 </Button>
                 <UserNav />
               </nav>
