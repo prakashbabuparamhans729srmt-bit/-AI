@@ -1,3 +1,58 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "A serene image of a family practicing yoga at sunrise in a beautiful Indian landscape.",
+      "imageUrl": "https://images.unsplash.com/photo-1616940916839-bfd5f9adde5a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmYW1pbHklMjB5b2dhfGVufDB8fHx8MTc3MjA4NzEzOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "family yoga"
+    },
+    {
+      "id": "testimonial1",
+      "description": "Avatar for a testimonial from Priya, Delhi.",
+      "imageUrl": "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc3MjAzMjc1MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "testimonial2",
+      "description": "Avatar for a testimonial from Ramesh, Chennai.",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzIwNTE5NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "family-father",
+      "description": "Avatar for Rajesh, the father.",
+      "imageUrl": "https://images.unsplash.com/photo-1616002851413-ebcc9611139d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxpbmRpYW4lMjBtYW58ZW58MHx8fHwxNzcyMDg3MTM5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "indian man"
+    },
+    {
+      "id": "family-mother",
+      "description": "Avatar for Seema, the mother.",
+      "imageUrl": "https://images.unsplash.com/photo-1618245472177-2a74ad3b994a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxpbmRpYW4lMjB3b21hbnxlbnwwfHx8fDE3NzIwMzgwNzl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "indian woman"
+    },
+    {
+      "id": "family-son",
+      "description": "Avatar for Aryan, the son.",
+      "imageUrl": "https://images.unsplash.com/photo-1556216009-b4503ebd4ccf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0ZWVuYWdlJTIwYm95fGVufDB8fHx8MTc3MjA4NzEzOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "teenage boy"
+    },
+    {
+      "id": "family-daughter",
+      "description": "Avatar for Ananya, the daughter.",
+      "imageUrl": "https://images.unsplash.com/photo-1599842057874-37393e9342df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx0ZWVuYWdlJTIwZ2lybHxlbnwwfHx8fDE3NzIwODcxMzl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "teenage girl"
+    },
+    {
+      "id": "kids-story",
+      "description": "A colorful illustration for a children's story about an honest woodcutter.",
+      "imageUrl": "https://images.unsplash.com/photo-1755194993706-45d9d3e9d4ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzdG9yeWJvb2slMjBpbGx1c3RyYXRpb258ZW58MHx8fHwxNzcyMDg3MTM5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "storybook illustration"
+    },
+    {
+      "id": "community-best-post-author",
+      "description": "Avatar for Ramesh Sharma from Jaipur, author of the week's best post.",
+      "imageUrl": "https://images.unsplash.com/photo-1633367583895-08545d733dfe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYW4lMjBzbWlsaW5nfGVufDB8fHx8MTc3MjA1ODg1NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man smiling"
+    }
+  ]
 }
