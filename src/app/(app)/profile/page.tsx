@@ -44,7 +44,7 @@ export default function ProfilePage() {
             <p className="text-muted-foreground">रुचियां: भौतिकी, खगोल विज्ञान, क्रिकेट</p>
             <p className="text-muted-foreground">धर्म: हिंदू (जिज्ञासु)</p>
           </div>
-          <Button variant="outline" asChild><Link href="#"><Edit className="mr-2 h-4 w-4" />प्रोफाइल संपादित करें</Link></Button>
+          <Button variant="outline" asChild><Link href="/wip"><Edit className="mr-2 h-4 w-4" />प्रोफाइल संपादित करें</Link></Button>
         </CardContent>
       </Card>
       
@@ -59,7 +59,7 @@ export default function ProfilePage() {
                     <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
                         {content.items.map(item => <li key={item}>{item}</li>)}
                     </ul>
-                    <Button variant="link" className="p-0 h-auto" asChild><Link href="#">और पढ़ें</Link></Button>
+                    <Button variant="link" className="p-0 h-auto" asChild><Link href="/wip">और पढ़ें</Link></Button>
                     <Separator className="mt-4"/>
                 </div>
             ))}
@@ -77,12 +77,12 @@ export default function ProfilePage() {
                         <Target className="h-5 w-5 text-primary"/>
                         <p>{goal}</p>
                     </div>
-                    <Button variant="ghost" size="sm" asChild><Link href="#"><CheckCircle className="mr-2 h-4 w-4"/>ट्रैक करें</Link></Button>
+                    <Button variant="ghost" size="sm" asChild><Link href="/wip"><CheckCircle className="mr-2 h-4 w-4"/>ट्रैक करें</Link></Button>
                 </div>
             ))}
             <div className="pt-4">
                 <Button variant="outline" className="w-full" asChild>
-                    <Link href="#">
+                    <Link href="/wip">
                       <Plus className="mr-2 h-4 w-4"/> नया लक्ष्य जोड़ें
                     </Link>
                 </Button>
@@ -112,8 +112,8 @@ export default function ProfilePage() {
                 </div>
             </div>
             <div className="flex justify-center gap-4">
-                <Button asChild><Link href="#">हाँ, कर्म पर</Link></Button>
-                <Button variant="outline" asChild><Link href="#">नहीं, और पूछना है</Link></Button>
+                <Button asChild><Link href="/wip">हाँ, कर्म पर</Link></Button>
+                <Button variant="outline" asChild><Link href="/wip">नहीं, और पूछना है</Link></Button>
             </div>
         </CardContent>
       </Card>

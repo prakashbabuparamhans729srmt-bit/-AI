@@ -11,15 +11,18 @@ const crisisTypes = [
   '🍷 नशे की लत', '💔 वैवाहिक समस्या', '👴 बुजुर्ग देखभाल',
 ];
 
+const religions = ['हिंदू', 'इस्लाम', 'ईसाई', 'बौद्ध', 'सिख'];
+
 const immediateHelp = [
-    { icon: <Music />, text: '5 मिनट का ध्यान संगीत', action: 'सुनें', href: '/crisis-counseling/listen' },
-    { icon: <MessageCircle />, text: '"ॐ" का जाप', action: 'करें', href: '/crisis-counseling/chant' },
-    { icon: <Wind />, text: '2 मिनट की गहरी सांसें', action: 'शुरू करें', href: '/crisis-counseling/breathe' },
-    { icon: <BookOpen />, text: 'प्रेरणादायक कहानी', action: 'पढ़ें', href: '/crisis-counseling/story' },
+    { icon: <Music />, text: '5 मिनट का ध्यान संगीत', action: 'सुनें', href: '/wip' },
+    { icon: <MessageCircle />, text: '"ॐ" का जाप', action: 'करें', href: '/wip' },
+    { icon: <Wind />, text: '2 मिनट की गहरी सांसें', action: 'शुरू करें', href: '/wip' },
+    { icon: <BookOpen />, text: 'प्रेरणादायक कहानी', action: 'पढ़ें', href: '/wip' },
 ];
 
 export default function CrisisCounselingPage() {
   const [selectedCrisis, setSelectedCrisis] = useState<string | null>(null);
+  const [selectedReligion, setSelectedReligion] = useState<string | null>(null);
 
   return (
     <div className="space-y-8">
@@ -53,7 +56,10 @@ export default function CrisisCounselingPage() {
               key={crisis}
               variant={selectedCrisis === crisis ? 'default' : 'outline'}
               className="h-auto py-3"
-              onClick={() => setSelectedCrisis(crisis)}
+              onClick={() => {
+                setSelectedCrisis(crisis);
+                setSelectedReligion(null);
+              }}
             >
               {crisis}
             </Button>
@@ -79,11 +85,11 @@ export default function CrisisCounselingPage() {
             </ul>
             <p className="font-semibold pt-4">क्या आप किसी विशेष धर्म के अनुसार मार्गदर्शन चाहेंगे?</p>
             <div className="flex flex-wrap gap-2">
-                <Button variant="secondary">हिंदू</Button>
-                <Button variant="secondary">इस्लाम</Button>
-                <Button variant="secondary">ईसाई</Button>
-                <Button variant="secondary">बौद्ध</Button>
-                <Button variant="secondary">सिख</Button>
+                {religions.map(religion => (
+                   <Button key={religion} variant={selectedReligion === religion ? 'default' : 'secondary'} onClick={() => setSelectedReligion(religion)}>
+                       {religion}
+                   </Button>
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -113,7 +119,7 @@ export default function CrisisCounselingPage() {
             <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-secondary/10 rounded-lg">
                 <p>निकटतम परामर्श केंद्र: आपके शहर में 3 केंद्र उपलब्ध हैं।</p>
                 <div className="flex gap-4">
-                    <Button variant="outline" asChild><Link href="/crisis-counseling/helplines">नंबर दिखाएं</Link></Button>
+                    <Button variant="outline" asChild><Link href="/wip">नंबर दिखाएं</Link></Button>
                     <Button asChild><Link href="/community"><Headset className="mr-2 h-5 w-5" /> मानव गुरु से बात करें</Link></Button>
                 </div>
             </CardContent>

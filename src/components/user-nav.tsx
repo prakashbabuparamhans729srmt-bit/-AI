@@ -37,10 +37,10 @@ export function UserNav() {
             <Link href="/profile">प्रोफाइल</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-             <Link href="/billing">बिलिंग</Link>
+             <Link href="/wip">बिलिंग</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/settings">सेटिंग्स</Link>
+            <Link href="/wip">सेटिंग्स</Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

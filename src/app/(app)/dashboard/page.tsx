@@ -46,8 +46,8 @@ export default function DashboardPage() {
               <p className="mt-2 text-right text-muted-foreground">- श्रीमद्भगवद्गीता</p>
             </CardContent>
             <CardFooter className="gap-2">
-              <Button asChild><Link href="#">इस पर चिंतन करें</Link></Button>
-              <Button variant="secondary" asChild><Link href="#">साझा करें</Link></Button>
+              <Button asChild><Link href="/wip">इस पर चिंतन करें</Link></Button>
+              <Button variant="secondary" asChild><Link href="/wip">साझा करें</Link></Button>
             </CardFooter>
           </Card>
 
@@ -136,9 +136,9 @@ export default function DashboardPage() {
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="ghost" asChild><Link href="#">याद दिलाएं</Link></Button>
+              <Button variant="ghost" asChild><Link href="/wip">याद दिलाएं</Link></Button>
               <Button variant="link" asChild>
-                <Link href="#">
+                <Link href="/wip">
                   सभी देखें <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -165,7 +165,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full" asChild><Link href="#">सुधार के सुझाव</Link></Button>
+              <Button variant="secondary" className="w-full" asChild><Link href="/wip">सुधार के सुझाव</Link></Button>
             </CardFooter>
           </Card>
         </div>

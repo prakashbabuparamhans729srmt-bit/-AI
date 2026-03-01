@@ -37,8 +37,8 @@ export default function GuruTrainingPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center gap-4">
-                    <Button variant="default" size="lg" className="bg-white text-secondary hover:bg-gray-100" asChild><Link href="#">आवेदन करें</Link></Button>
-                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10" asChild><Link href="#">जानकारी लें</Link></Button>
+                    <Button variant="default" size="lg" className="bg-white text-secondary hover:bg-gray-100" asChild><Link href="/wip">आवेदन करें</Link></Button>
+                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10" asChild><Link href="/wip">जानकारी लें</Link></Button>
                 </CardContent>
             </Card>
 
@@ -52,7 +52,7 @@ export default function GuruTrainingPage() {
                            <div className="flex justify-between items-center">
                              <h3 className="font-bold text-lg">🕉️ वर्ष {item.year}: {item.title}</h3>
                              <Button variant={item.progress === 100 ? "secondary" : "default"} size="sm" asChild>
-                                <Link href="#">
+                                <Link href="/wip">
                                   {item.progress === 100 && <FileText className="mr-2 h-4 w-4" />}
                                   {item.status}
                                 </Link>
@@ -100,7 +100,7 @@ export default function GuruTrainingPage() {
                         ))}
                     </div>
                     <div className="text-center pt-6">
-                        <Button variant="outline" asChild><Link href="#">सभी देखें</Link></Button>
+                        <Button variant="outline" asChild><Link href="/wip">सभी देखें</Link></Button>
                     </div>
                 </CardContent>
             </Card>
@@ -120,7 +120,7 @@ export default function GuruTrainingPage() {
                         </div>
                     ))}
                     <div className="text-center pt-4">
-                        <Button asChild><Link href="#">पंजीकरण करें</Link></Button>
+                        <Button asChild><Link href="/wip">पंजीकरण करें</Link></Button>
                     </div>
                 </CardContent>
             </Card>
