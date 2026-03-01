@@ -39,7 +39,7 @@ const featureList = [
     icon: <HeartHandshake className="h-8 w-8" />,
     title: 'ध्यान और योग',
     description: 'शांति और मानसिक स्पष्टता के लिए निर्देशित ध्यान और योग सत्र।',
-    href: '/meditation'
+    href: '/wip'
   },
   {
     icon: <Users className="h-8 w-8" />,
@@ -244,25 +244,25 @@ export default function Home() {
           </p>
           <nav className="flex gap-4 sm:gap-6">
             <Link
-              href="/about"
+              href="/wip"
               className="text-sm hover:underline underline-offset-4"
             >
               हमारे बारे में
             </Link>
             <Link
-              href="/help"
+              href="/wip"
               className="text-sm hover:underline underline-offset-4"
             >
               सहायता
             </Link>
             <Link
-              href="/privacy"
+              href="/wip"
               className="text-sm hover:underline underline-offset-4"
             >
               गोपनीयता
             </Link>
             <Link
-              href="/contact"
+              href="/wip"
               className="text-sm hover:underline underline-offset-4"
             >
               संपर्क
