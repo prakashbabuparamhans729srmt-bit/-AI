@@ -117,7 +117,7 @@ export default function Home() {
                   <Link href="/register">निःशुल्क पंजीकरण करें</Link>
                 </Button>
                 <Button size="lg" variant="secondary" asChild>
-                  <Link href="/#features">वीडियो देखें</Link>
+                  <Link href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">वीडियो देखें</Link>
                 </Button>
               </div>
             </div>
@@ -210,7 +210,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Button size="lg" variant="outline" asChild>
-                <Link href="/#download">
+                <Link href="https://play.google.com/store" target="_blank">
                 <svg
                   className="mr-2 h-6 w-6"
                   viewBox="0 0 24 24"
@@ -222,7 +222,7 @@ export default function Home() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/#download">
+                <Link href="https://www.apple.com/app-store/" target="_blank">
                 <svg
                   className="mr-2 h-6 w-6"
                   viewBox="0 0 24 24"

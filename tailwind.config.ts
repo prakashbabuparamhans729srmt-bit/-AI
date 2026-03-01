@@ -17,8 +17,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['"Tiro Devanagari Hindi"', 'serif'],
+        body: ['Inter', 'Roboto', 'sans-serif'],
+        headline: ['"Premchand"', '"Tiro Devanagari Hindi"', 'serif'],
         code: ['monospace'],
       },
       colors: {
