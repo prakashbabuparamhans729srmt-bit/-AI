@@ -8,10 +8,10 @@ import Link from 'next/link';
 
 
 const topics = [
-  { title: 'क्या आधुनिकता में संस्कार बचाए रखना संभव है?', answers: 45, comments: 23 },
-  { title: 'बच्चों को मोबाइल से दूर कैसे रखें?', answers: 78, comments: 34 },
-  { title: 'विभिन्न धर्मों में विवाह के नियम - अनुभव साझा करें', answers: 112, comments: 56 },
-  { title: 'क्या AI कुलगुरु पर भरोसा किया जा सकता है?', answers: 234, comments: 89 },
+  { id: 1, title: 'क्या आधुनिकता में संस्कार बचाए रखना संभव है?', answers: 45, comments: 23 },
+  { id: 2, title: 'बच्चों को मोबाइल से दूर कैसे रखें?', answers: 78, comments: 34 },
+  { id: 3, title: 'विभिन्न धर्मों में विवाह के नियम - अनुभव साझा करें', answers: 112, comments: 56 },
+  { id: 4, title: 'क्या AI कुलगुरु पर भरोसा किया जा सकता है?', answers: 234, comments: 89 },
 ];
 
 const events = [
@@ -37,7 +37,7 @@ export default function CommunityPage() {
             <Input placeholder="विषय या प्रश्न खोजें..." className="pl-10 h-11" />
           </div>
           <Button className="w-full md:w-auto" asChild>
-            <Link href="#">
+            <Link href="/community/new">
               <Plus className="mr-2 h-5 w-5" />
               नया विषय शुरू करें
             </Link>
@@ -50,13 +50,13 @@ export default function CommunityPage() {
           <CardTitle className="font-headline">🔥 आज के चर्चा विषय</CardTitle>
         </CardHeader>
         <CardContent className="space-y-0 p-0">
-          {topics.map((topic, index) => (
-            <div key={index} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border-b last:border-b-0">
+          {topics.map((topic) => (
+            <div key={topic.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border-b last:border-b-0">
               <p className="font-semibold flex-grow mb-2 md:mb-0">{topic.title}</p>
               <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
                 <span>उत्तर: {topic.answers}</span>
                 <span>टिप्पणियाँ: {topic.comments}</span>
-                <Button variant="secondary" size="sm" asChild><Link href="#">पढ़ें</Link></Button>
+                <Button variant="secondary" size="sm" asChild><Link href={`/community/topic/${topic.id}`}>पढ़ें</Link></Button>
               </div>
             </div>
           ))}
@@ -100,8 +100,8 @@ export default function CommunityPage() {
             </div>
           ))}
           <div className="flex justify-center gap-4 pt-4">
-              <Button asChild><Link href="#">शामिल हों</Link></Button>
-              <Button variant="outline" asChild><Link href="#">याद दिलाएं</Link></Button>
+              <Button asChild><Link href="/community/events">शामिल हों</Link></Button>
+              <Button variant="outline" asChild><Link href="/community/events">याद दिलाएं</Link></Button>
           </div>
         </CardContent>
       </Card>

@@ -12,10 +12,10 @@ const crisisTypes = [
 ];
 
 const immediateHelp = [
-    { icon: <Music />, text: '5 मिनट का ध्यान संगीत', action: 'सुनें' },
-    { icon: <MessageCircle />, text: '"ॐ" का जाप', action: 'करें' },
-    { icon: <Wind />, text: '2 मिनट की गहरी सांसें', action: 'शुरू करें' },
-    { icon: <BookOpen />, text: 'प्रेरणादायक कहानी', action: 'पढ़ें' },
+    { icon: <Music />, text: '5 मिनट का ध्यान संगीत', action: 'सुनें', href: '/crisis-counseling/listen' },
+    { icon: <MessageCircle />, text: '"ॐ" का जाप', action: 'करें', href: '/crisis-counseling/chant' },
+    { icon: <Wind />, text: '2 मिनट की गहरी सांसें', action: 'शुरू करें', href: '/crisis-counseling/breathe' },
+    { icon: <BookOpen />, text: 'प्रेरणादायक कहानी', action: 'पढ़ें', href: '/crisis-counseling/story' },
 ];
 
 export default function CrisisCounselingPage() {
@@ -32,13 +32,13 @@ export default function CrisisCounselingPage() {
         </CardHeader>
         <CardContent className="flex justify-center gap-4">
           <Button variant="secondary" size="lg" className="bg-white text-destructive hover:bg-gray-100" asChild>
-            <Link href="#">
+            <Link href="/community">
               <MessageCircle className="mr-2 h-5 w-5" />
               तुरंत बात करें
             </Link>
           </Button>
           <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10" asChild>
-            <Link href="#">शांत रहने के उपाय</Link>
+            <Link href="#immediate-help">शांत रहने के उपाय</Link>
           </Button>
         </CardContent>
       </Card>
@@ -89,7 +89,7 @@ export default function CrisisCounselingPage() {
         </Card>
       )}
 
-        <Card>
+        <Card id="immediate-help">
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">🧘 शांति के लिए तुरंत उपाय</CardTitle>
             </CardHeader>
@@ -100,7 +100,7 @@ export default function CrisisCounselingPage() {
                             <div className="text-primary">{item.icon}</div>
                             <p>{item.text}</p>
                         </div>
-                        <Button variant="default" asChild><Link href="#">{item.action}</Link></Button>
+                        <Button variant="default" asChild><Link href={item.href}>{item.action}</Link></Button>
                     </div>
                 ))}
             </CardContent>
@@ -113,8 +113,8 @@ export default function CrisisCounselingPage() {
             <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-secondary/10 rounded-lg">
                 <p>निकटतम परामर्श केंद्र: आपके शहर में 3 केंद्र उपलब्ध हैं।</p>
                 <div className="flex gap-4">
-                    <Button variant="outline" asChild><Link href="#">नंबर दिखाएं</Link></Button>
-                    <Button asChild><Link href="#"><Headset className="mr-2 h-5 w-5" /> मानव गुरु से बात करें</Link></Button>
+                    <Button variant="outline" asChild><Link href="/crisis-counseling/helplines">नंबर दिखाएं</Link></Button>
+                    <Button asChild><Link href="/community"><Headset className="mr-2 h-5 w-5" /> मानव गुरु से बात करें</Link></Button>
                 </div>
             </CardContent>
         </Card>

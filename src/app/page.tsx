@@ -39,7 +39,7 @@ const featureList = [
     icon: <HeartHandshake className="h-8 w-8" />,
     title: 'ध्यान और योग',
     description: 'शांति और मानसिक स्पष्टता के लिए निर्देशित ध्यान और योग सत्र।',
-    href: '#'
+    href: '/meditation'
   },
   {
     icon: <Users className="h-8 w-8" />,
@@ -117,7 +117,7 @@ export default function Home() {
                   <Link href="/register">निःशुल्क पंजीकरण करें</Link>
                 </Button>
                 <Button size="lg" variant="secondary" asChild>
-                  <Link href="#">वीडियो देखें</Link>
+                  <Link href="/#features">वीडियो देखें</Link>
                 </Button>
               </div>
             </div>
@@ -210,7 +210,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Button size="lg" variant="outline" asChild>
-                <Link href="#">
+                <Link href="/#download">
                 <svg
                   className="mr-2 h-6 w-6"
                   viewBox="0 0 24 24"
@@ -222,7 +222,7 @@ export default function Home() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="#">
+                <Link href="/#download">
                 <svg
                   className="mr-2 h-6 w-6"
                   viewBox="0 0 24 24"
@@ -244,25 +244,25 @@ export default function Home() {
           </p>
           <nav className="flex gap-4 sm:gap-6">
             <Link
-              href="#"
+              href="/about"
               className="text-sm hover:underline underline-offset-4"
             >
               हमारे बारे में
             </Link>
             <Link
-              href="#"
+              href="/help"
               className="text-sm hover:underline underline-offset-4"
             >
               सहायता
             </Link>
             <Link
-              href="#"
+              href="/privacy"
               className="text-sm hover:underline underline-offset-4"
             >
               गोपनीयता
             </Link>
             <Link
-              href="#"
+              href="/contact"
               className="text-sm hover:underline underline-offset-4"
             >
               संपर्क
