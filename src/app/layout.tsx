@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 import { SupportChatbot } from '@/components/support-chatbot';
+import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'कुलगुरु AI - हर परिवार का अपना कुलगुरु',
@@ -32,9 +33,11 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
+          <FirebaseClientProvider>
             {children}
             <Toaster />
             <SupportChatbot />
+          </FirebaseClientProvider>
         </ThemeProvider>
       </body>
     </html>

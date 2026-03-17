@@ -1,3 +1,4 @@
+'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,25 +10,44 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export function UserNav() {
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
+
+  if (!user) {
+    return null; // Or a login button
+  }
+  
+  const displayName = user.isAnonymous ? "अतिथि" : user.displayName || user.email?.split('@')[0] || "उपयोगकर्ता";
+  const displayEmail = user.isAnonymous ? "guest@kulguru.ai" : user.email || "";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://picsum.photos/seed/user-avatar/100/100" alt="@user" />
-            <AvatarFallback>SP</AvatarFallback>
+            <AvatarImage src={user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`} alt={displayName} />
+            <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">शर्मा परिवार</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              sharma.parivar@example.com
+              {displayEmail}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -44,8 +64,8 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/">लॉग आउट</Link>
+        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+          लॉग आउट
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

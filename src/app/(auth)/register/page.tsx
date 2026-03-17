@@ -1,11 +1,85 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
+import { useAuth, useFirestore, useUser, setDocumentNonBlocking } from '@/firebase';
+import { createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
+  const [familyName, setFamilyName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const newUser = userCredential.user;
+
+      // Create user profile in Firestore
+      const userDocRef = doc(firestore, 'users', newUser.uid);
+      const userProfile = {
+        id: newUser.uid,
+        familyId: null,
+        firstName: familyName || email.split('@')[0],
+        lastName: familyName || 'User',
+        dateOfBirth: '', // Placeholder
+        gender: '', // Placeholder
+        email: newUser.email,
+        profileImageUrl: newUser.photoURL || `https://picsum.photos/seed/${newUser.uid}/200/200`
+      };
+      
+      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+
+      toast({
+        title: 'पंजीकरण सफल',
+        description: 'आपका खाता बन गया है। अब आपको डैशबोर्ड पर ले जाया जा रहा है।',
+      });
+
+      router.push('/dashboard');
+
+    } catch (error) {
+      const authError = error as AuthError;
+      toast({
+        variant: 'destructive',
+        title: 'पंजीकरण विफल',
+        description: authError.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isUserLoading || user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/10 p-4">
       <Card className="mx-auto w-full max-w-sm">
@@ -17,23 +91,44 @@ export default function RegisterPage() {
           <CardDescription>आज ही अपनी आध्यात्मिक यात्रा शुरू करें</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
+          <form onSubmit={handleRegister} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="family-name">परिवार का नाम</Label>
-              <Input id="family-name" placeholder="उदा. शर्मा परिवार" required />
+              <Input 
+                id="family-name" 
+                placeholder="उदा. शर्मा परिवार" 
+                required 
+                value={familyName}
+                onChange={(e) => setFamilyName(e.target.value)}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">ईमेल</Label>
-              <Input id="email" type="email" placeholder="name@example.com" required />
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="name@example.com" 
+                required 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">पासवर्ड</Label>
-              <Input id="password" type="password" />
+              <Label htmlFor="password">पासवर्ड (कम से कम 6 अक्षर)</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
-            <Button type="submit" className="w-full" asChild>
-                <Link href="/dashboard">खाता बनाएं</Link>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              खाता बनाएं
             </Button>
-          </div>
+          </form>
           <div className="mt-4 text-center text-sm">
             पहले से ही एक खाता है?{' '}
             <Link href="/login" className="underline">
