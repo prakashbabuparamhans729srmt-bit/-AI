@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
+import { User } from 'lucide-react';
 
 export default function LoginPage() {
   return (
@@ -45,7 +46,14 @@ export default function LoginPage() {
               </div>
             </div>
             <Button variant="outline" className="w-full text-lg py-6">
+              <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5"><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.08-2.58 1.9-4.55 1.9-3.46 0-6.3-2.8-6.3-6.2s2.84-6.2 6.3-6.2c2.03 0 3.38.77 4.16 1.5l2.4-2.32C17.4.82 15.14 0 12.48 0 5.86 0 0 5.58 0 12s5.86 12 12.48 12c7.14 0 11.94-4.96 11.94-12.2 0-.76-.08-1.5-.22-2.22H12.48z"/></svg>
               Google से लॉग इन करें
+            </Button>
+            <Button variant="secondary" className="w-full text-lg py-6" asChild>
+                <Link href="/dashboard">
+                    <User className="mr-2 h-5 w-5" />
+                    अतिथि के रूप में जारी रखें
+                </Link>
             </Button>
           </div>
           <div className="mt-6 text-center text-sm">

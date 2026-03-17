@@ -9,12 +9,15 @@ import {
   LifeBuoy,
   BrainCircuit,
   Baby,
+  Search,
+  Mic,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Logo } from '@/components/logo';
+import { Input } from '@/components/ui/input';
 
 const featureList = [
   {
@@ -157,8 +160,34 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Search Section */}
+        <section id="search" className="w-full py-12 md:py-24 lg:py-32 bg-secondary/10">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline text-secondary">
+                  कुछ भी खोजें
+                </h2>
+                <p className="max-w-[900px] text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  हमारे ज्ञान-कोष, सामुदायिक चर्चाओं और नियमों में से कुछ भी खोजें।
+                </p>
+              </div>
+              <div className="w-full max-w-2xl pt-8">
+                <div className="relative">
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground" />
+                  <Input placeholder="धर्म, संकट, या कोई प्रश्न खोजें..." className="pl-14 pr-16 text-lg h-16 rounded-full shadow-lg" />
+                  <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full hover:bg-accent/50">
+                    <Mic className="h-7 w-7" />
+                    <span className="sr-only">बोलकर खोजें</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Testimonials Section */}
-        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-secondary/10">
+        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-background">
           <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
             <div className="space-y-3">
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline text-secondary">

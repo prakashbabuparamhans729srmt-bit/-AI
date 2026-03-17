@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, Mic } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -52,7 +52,11 @@ export default function KnowledgeHubPage() {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input placeholder="धर्म, अवधारणा या प्रश्न खोजें..." className="pl-10 text-lg h-12" />
+        <Input placeholder="धर्म, अवधारणा या प्रश्न खोजें..." className="pl-10 pr-12 text-lg h-12" />
+        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10">
+          <Mic className="h-5 w-5" />
+          <span className="sr-only">बोलकर खोजें</span>
+        </Button>
       </div>
 
       <Card>

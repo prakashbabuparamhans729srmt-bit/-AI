@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Calendar, Plus, Search, ThumbsUp } from 'lucide-react';
+import { Calendar, Plus, Search, ThumbsUp, Mic } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 
@@ -34,7 +34,11 @@ export default function CommunityPage() {
         <CardContent className="p-4 flex flex-col md:flex-row gap-4">
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="विषय या प्रश्न खोजें..." className="pl-10 h-11" />
+            <Input placeholder="विषय या प्रश्न खोजें..." className="pl-10 pr-12 h-11" />
+            <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10">
+              <Mic className="h-5 w-5" />
+              <span className="sr-only">बोलकर खोजें</span>
+            </Button>
           </div>
           <Button className="w-full md:w-auto" asChild>
             <Link href="/community/new">
@@ -100,8 +104,8 @@ export default function CommunityPage() {
             </div>
           ))}
           <div className="flex justify-center gap-4 pt-4">
-              <Button asChild><Link href="/community/events">शामिल हों</Link></Button>
-              <Button variant="outline" asChild><Link href="/community/events">याद दिलाएं</Link></Button>
+              <Button asChild><Link href="/wip">शामिल हों</Link></Button>
+              <Button variant="outline" asChild><Link href="/wip">याद दिलाएं</Link></Button>
           </div>
         </CardContent>
       </Card>

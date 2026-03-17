@@ -40,7 +40,7 @@ export function UserNav() {
              <Link href="/wip">बिलिंग</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/wip">सेटिंग्स</Link>
+            <Link href="/settings">सेटिंग्स</Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

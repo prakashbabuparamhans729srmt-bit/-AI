@@ -24,6 +24,7 @@ const navItems = [
   { href: '/community', icon: <MessageCircle />, label: 'सामुदायिक मंच' },
   { href: '/profile', icon: <Users />, label: 'परिवार प्रोफाइल' },
   { href: '/guru-training', icon: <GraduationCap />, label: 'गुरु प्रशिक्षण' },
+  { href: '/settings', icon: <Settings />, label: 'सेटिंग्स' },
 ];
 
 export function MainNav({ className }: { className?: string }) {
