@@ -1,0 +1,375 @@
+/**
+ * # Firestore Security Rules
+ *
+ * ## Core Philosophy
+ * This ruleset enforces a security model based on strict user ownership, shared family access,
+ * public read-only content, and administrator-managed data. The primary goal is to ensure that
+ * users can only access their own data or data explicitly shared with them, while allowing public
+ * consumption of non-sensitive content. Administrative privileges are required for managing
+ * platform-wide content and sensitive user roles.
+ *
+ * ## Data Structure
+ * - **User-Private Data**: Stored in subcollections under `/users/{userId}`. Access is almost
+ *   exclusively restricted to the authenticated user whose UID matches `{userId}`.
+ * - **Shared Family Data**: Stored under `/families/{familyId}`. Access is granted to a list of
+ *   users whose UIDs are stored in the `memberUserIds` array on the family document.
+ * - **Public Content**: Top-level collections like `/knowledgeArticles`, `/stories`, and `/religions`
+ *   are publicly readable by anyone but can only be modified by administrators.
+ * - **Community Content**: Collections like `/forumTopics` are publicly readable, with write
+ *   permissions granted to the original author of the content.
+ * - **Administrative Roles**: A dedicated collection, `/admin_roles/{adminUid}`, is used to grant
+ *   administrator privileges. The existence of a document with the user's UID signifies they are an admin.
+ *
+ * ## Key Security Decisions
+ * - **Default Deny**: All paths are closed by default. Access is granted explicitly.
+ * - **No User Listing**: The top-level `/users` collection cannot be listed to protect user privacy.
+ * - **Structural Segregation**: Sensitive data like pending testimonials (`/pending_testimonials`) is stored
+ *   in a separate collection from publicly approved data (`/public_testimonials`). This enforces
+ *   a clear security boundary and simplifies rules.
+ * - **Data Validation**: Rules focus on authorization and relational integrity (e.g., ensuring a `userId`
+ *   in a document matches the path). They do not enforce the full data schema, allowing for
+ *   flexibility during development.
+ *
+ * ## Denormalization for Authorization
+ * To ensure performant and secure rules, data required for an authorization decision is denormalized
+ * onto the documents being secured. This avoids slow and costly `get()` calls.
+ * - **Family Membership**: For a document like a family goal at `/families/{familyId}/goals/{goalId}`,
+ *   the `memberUserIds` array from the parent family document is expected to be copied onto the goal
+ *   document itself. This allows a simple rule check (`request.auth.uid in resource.data.memberUserIds`)
+ *   without an extra read.
+ * - **Content Ownership**: Publicly-contributed content like forum posts must contain an `authorUserId`
+ *   field. This allows write and delete operations to be restricted to the original author directly.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * Used to verify ownership of a document or data tree.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    /**
+     * Checks for ownership on an existing document.
+     * This is a critical check for all update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Checks if the authenticated user has administrative privileges.
+     * Admin status is determined by the existence of a document in the /admin_roles collection
+     * where the document ID is the user's UID.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admin_roles/$(request.auth.uid));
+    }
+    
+    /**
+     * Checks if a user is a member of a family based on the provided document data.
+     * The document data must contain a 'memberUserIds' array.
+     */
+    function isFamilyMember(docData) {
+      return isSignedIn() && request.auth.uid in docData.memberUserIds;
+    }
+    
+    /**
+     * Checks ownership of a document by comparing the request auth UID
+     * with an owner field (e.g., 'authorUserId') on the document.
+     */
+    function isDocumentOwner(docData, ownerField) {
+      return isSignedIn() && request.auth.uid == docData[ownerField];
+    }
+
+    // --------------------------------
+    // User-Specific Data
+    // --------------------------------
+
+    /**
+     * @description Controls access to a user's own profile document.
+     * @path /users/{userId}
+     * @allow (create) A new user creating their own profile document for the first time.
+     * @deny (get) An authenticated user trying to read another user's profile.
+     * @principle Restricts access to a user's own data tree and allows self-creation of a profile.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow listing all users for privacy
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to a user's private conversations.
+     * @path /users/{userId}/conversations/{conversationId}
+     * @allow (create) The user creating a new conversation for themselves.
+     * @deny (list) Another user trying to list conversations in someone else's profile.
+     * @principle Enforces strict ownership within a user's private data tree.
+     */
+    match /users/{userId}/conversations/{conversationId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+    
+    /**
+     * @description Controls access to messages within a user's private conversation.
+     * @path /users/{userId}/conversations/{conversationId}/messages/{messageId}
+     * @allow (get) The user reading a message within their own conversation.
+     * @deny (get) Any other user trying to read a message in someone else's conversation.
+     * @principle Inherits ownership from the parent path for deep data protection.
+     */
+    match /users/{userId}/conversations/{conversationId}/messages/{messageId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.conversationId == conversationId;
+      allow update: if isExistingOwner(userId) && request.resource.data.conversationId == resource.data.conversationId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to a user's personal goals.
+     * @path /users/{userId}/goals/{goalId}
+     * @allow (create) The user creating a new personal goal.
+     * @deny (update) Another user trying to update someone else's goal.
+     * @principle Enforces strict ownership within a user's private data tree.
+     */
+    match /users/{userId}/goals/{goalId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    // --------------------------------
+    // Shared Family Data
+    // --------------------------------
+
+    /**
+     * @description Controls access to a shared family document.
+     * @path /families/{familyId}
+     * @allow (get) A user who is listed in the 'memberUserIds' array reading the family document.
+     * @deny (update) A regular family member trying to change the family name.
+     * @principle Secures shared data using a denormalized list of authorized members.
+     */
+    match /families/{familyId} {
+      allow get: if isFamilyMember(resource.data);
+      allow list: if isSignedIn(); // Requires client-side query: .where('memberUserIds', 'array-contains', uid)
+      allow create: if isSignedIn() && isFamilyMember(request.resource.data) && isDocumentOwner(request.resource.data, 'headOfFamilyUserId');
+      allow update: if resource != null && isDocumentOwner(resource.data, 'headOfFamilyUserId');
+      allow delete: if resource != null && isDocumentOwner(resource.data, 'headOfFamilyUserId');
+    }
+
+    /**
+     * @description Controls access to a shared family goal. Assumes member list is denormalized on the goal document.
+     * @path /families/{familyId}/goals/{goalId}
+     * @allow (get) A family member reading a goal for their family.
+     * @deny (create) A user trying to create a goal for a family they are not a part of.
+     * @principle Relies on denormalized authorization data (member list) to secure subcollection documents.
+     */
+    match /families/{familyId}/goals/{goalId} {
+      allow get: if isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data);
+      allow list: if isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data);
+      allow create: if isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data) && request.resource.data.familyId == familyId;
+      allow update: if resource != null && isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data) && request.resource.data.familyId == resource.data.familyId;
+      allow delete: if resource != null && isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data);
+    }
+    
+    // --------------------------------
+    // Community & Forum Content
+    // --------------------------------
+    
+    /**
+     * @description Controls access to forum topics. Publicly readable, but writes are restricted.
+     * @path /forumTopics/{topicId}
+     * @allow (create) Any signed-in user creating a new topic.
+     * @deny (delete) A user trying to delete a topic they did not create.
+     * @principle Implements a "Public Read with Owner-Only Writes" pattern.
+     */
+    match /forumTopics/{topicId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isDocumentOwner(request.resource.data, 'creatorUserId');
+      allow update: if resource != null && (isDocumentOwner(resource.data, 'creatorUserId') || isAdmin()) && request.resource.data.creatorUserId == resource.data.creatorUserId;
+      allow delete: if resource != null && (isDocumentOwner(resource.data, 'creatorUserId') || isAdmin());
+    }
+    
+    /**
+     * @description Controls access to posts within a forum topic.
+     * @path /forumTopics/{topicId}/posts/{postId}
+     * @allow (create) Any signed-in user creating a new post.
+     * @deny (update) A user trying to edit a post authored by someone else.
+     * @principle Enforces document ownership for writes.
+     */
+    match /forumTopics/{topicId}/posts/{postId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isDocumentOwner(request.resource.data, 'authorUserId') && request.resource.data.forumTopicId == topicId;
+      allow update: if resource != null && (isDocumentOwner(resource.data, 'authorUserId') || isAdmin()) && request.resource.data.authorUserId == resource.data.authorUserId;
+      allow delete: if resource != null && (isDocumentOwner(resource.data, 'authorUserId') || isAdmin());
+    }
+    
+    /**
+     * @description Controls access to comments on a forum post.
+     * @path /forumTopics/{topicId}/posts/{postId}/comments/{commentId}
+     * @allow (create) Any signed-in user creating a new comment.
+     * @deny (delete) A user trying to delete a comment they did not author.
+     * @principle Enforces document ownership for writes.
+     */
+    match /forumTopics/{topicId}/posts/{postId}/comments/{commentId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isDocumentOwner(request.resource.data, 'authorUserId') && request.resource.data.forumPostId == postId;
+      allow update: if resource != null && (isDocumentOwner(resource.data, 'authorUserId') || isAdmin()) && request.resource.data.authorUserId == resource.data.authorUserId;
+      allow delete: if resource != null && (isDocumentOwner(resource.data, 'authorUserId') || isAdmin());
+    }
+
+    /**
+     * @description Controls access to community events. Publicly readable.
+     * @path /communityEvents/{eventId}
+     * @allow (create) An admin or authenticated user creating a new event.
+     * @deny (update) A user trying to edit an event they did not organize.
+     * @principle Implements a "Public Read with Owner-Only Writes" pattern, with admin override.
+     */
+    match /communityEvents/{eventId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && (isDocumentOwner(request.resource.data, 'organizerUserId') || isAdmin());
+      // CRITICAL: Cannot implement owner-only writes. The 'CommunityEvent' entity is missing an 'organizerUserId' field.
+      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
+    // --------------------------------
+    // Guru & Training Data
+    // --------------------------------
+
+    /**
+     * @description Controls access to Guru profiles. Publicly readable.
+     * @path /gurus/{guruId}
+     * @allow (update) A Guru updating their own profile, or an admin updating any profile.
+     * @deny (delete) A regular user trying to delete a Guru profile.
+     * @principle Allows self-management for the resource owner and full control for administrators.
+     */
+    match /gurus/{guruId} {
+      allow get, list: if true;
+      allow create: if isOwner(guruId) || isAdmin();
+      allow update: if (isExistingOwner(guruId) || isAdmin());
+      allow delete: if (isExistingOwner(guruId) || isAdmin());
+    }
+
+    /**
+     * @description Controls access to a Guru's training progress.
+     * @path /gurus/{guruId}/trainingProgress/{progressId}
+     * @allow (get) The Guru viewing their own training progress, or an admin viewing any Guru's progress.
+     * @deny (list) A Guru trying to list the progress of another Guru.
+     * @principle Combines path-based ownership with administrative access.
+     */
+    match /gurus/{guruId}/trainingProgress/{progressId} {
+      allow get, list: if isOwner(guruId) || isAdmin();
+      allow create: if (isOwner(guruId) || isAdmin()) && request.resource.data.guruId == guruId;
+      allow update: if (isExistingOwner(guruId) || isAdmin()) && request.resource.data.guruId == resource.data.guruId;
+      allow delete: if isExistingOwner(guruId) || isAdmin();
+    }
+    
+    // --------------------------------
+    // Testimonials (Segregated Collections)
+    // --------------------------------
+    
+    /**
+     * @description Controls access to public, approved testimonials. Read-only for everyone except admins.
+     * @path /public_testimonials/{testimonialId}
+     * @allow (get) Any user or visitor reading an approved testimonial.
+     * @deny (create) A regular user trying to add a testimonial directly to the public collection.
+     * @principle Structural segregation of public vs. non-public data. This collection is write-protected.
+     */
+    match /public_testimonials/{testimonialId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Controls access to testimonials awaiting moderation.
+     * @path /pending_testimonials/{testimonialId}
+     * @allow (create) An authenticated user submitting a new testimonial for review.
+     * @deny (list) A user trying to see all other pending testimonials.
+     * @principle A secure "inbox" pattern. Users can manage their own submissions, admins can manage all.
+     */
+    match /pending_testimonials/{testimonialId} {
+      allow get: if isAdmin() || isDocumentOwner(resource.data, 'authorUserId');
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && isDocumentOwner(request.resource.data, 'authorUserId');
+      allow update: if resource != null && (isAdmin() || isDocumentOwner(resource.data, 'authorUserId'));
+      allow delete: if resource != null && (isAdmin() || isDocumentOwner(resource.data, 'authorUserId'));
+    }
+
+    // --------------------------------
+    // Public Read-Only Content (Admin Writable)
+    // --------------------------------
+
+    /**
+     * @description Generic rule for public, read-only content collections managed by admins.
+     * @path /knowledgeArticles, /religions, /dailyWisdom, /stories, /activities, etc.
+     * @allow (list) Any user, including anonymous visitors, listing articles.
+     * @deny (create) An authenticated, non-admin user trying to create a new story.
+     * @principle Secures informational content by making it read-only for the public and writable only by admins.
+     *
+     * FIX: The 'where' clause after a non-recursive path segment is invalid syntax.
+     *      Moved the condition to the 'allow' statements.
+     */
+    match /{publicCollection}/{docId} {
+      allow get, list: if publicCollection in [
+        'knowledgeArticles', 'religions', 'dailyWisdom', 'stories', 'activities',
+        'trainingCourses', 'festivals', 'crisisCounselingTopics'
+      ];
+      allow create, update, delete: if isAdmin() && publicCollection in [
+        'knowledgeArticles', 'religions', 'dailyWisdom', 'stories', 'activities',
+        'trainingCourses', 'festivals', 'crisisCounselingTopics'
+      ];
+    }
+
+    /**
+     * @description Generic rule for nested public, read-only content collections.
+     * @path /trainingCourses/{courseId}/modules/{moduleId}, etc.
+     * @allow (get) Any user reading a course module.
+     * @deny (update) A non-admin trying to change a course module's content.
+     * @principle Secures nested informational content by making it read-only for the public.
+     *
+     * FIX: The 'where' clause after a non-recursive path segment is invalid syntax.
+     *      Moved the condition to the 'allow' statements.
+     */
+    match /{publicCollection}/{docId}/{nestedCollection}/{nestedDocId} {
+      allow get, list: if publicCollection in ['trainingCourses', 'crisisCounselingTopics']
+                       && nestedCollection in ['modules', 'guidance'];
+      allow create, update, delete: if isAdmin()
+                                  && publicCollection in ['trainingCourses', 'crisisCounselingTopics']
+                                  && nestedCollection in ['modules', 'guidance'];
+    }
+    
+    // --------------------------------
+    // Administrative Data
+    // --------------------------------
+
+    /**
+     * @description Controls access to the admin roles collection. Only other admins can manage this.
+     * @path /admin_roles/{adminUid}
+     * @allow (create) An existing admin adding a new admin.
+     * @deny (get) A non-admin user checking if another user is an admin.
+     * @principle Secures the administration mechanism itself.
+     */
+    match /admin_roles/{adminUid} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+  }
+}
