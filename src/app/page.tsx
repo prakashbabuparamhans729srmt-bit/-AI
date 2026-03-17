@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -74,6 +75,8 @@ const testimonials = [
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
 
 export default function Home() {
+  redirect('/login');
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
