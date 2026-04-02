@@ -240,15 +240,15 @@ service cloud.firestore {
     /**
      * @description Controls access to community events. Publicly readable.
      * @path /communityEvents/{eventId}
-     * @allow (create) An admin or authenticated user creating a new event.
+     * @allow (create) An authenticated user creating a new event for themselves, or an admin creating an event.
      * @deny (update) A user trying to edit an event they did not organize.
      * @principle Implements a "Public Read with Owner-Only Writes" pattern, with admin override.
      */
     match /communityEvents/{eventId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && (isDocumentOwner(request.resource.data, 'organizerUserId') || isAdmin());
-      // CRITICAL: Cannot implement owner-only writes. The 'CommunityEvent' entity is missing an 'organizerUserId' field.
-      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create: if isSignedIn() && isDocumentOwner(request.resource.data, 'organizerUserId');
+      allow update: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
+      allow delete: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
     }
 
     // --------------------------------

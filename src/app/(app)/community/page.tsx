@@ -1,28 +1,55 @@
+'use client';
+
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Calendar, Plus, Search, ThumbsUp, Mic } from 'lucide-react';
+import { Calendar, Plus, Search, ThumbsUp, Mic, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 
-
-const topics = [
-  { id: 1, title: 'क्या आधुनिकता में संस्कार बचाए रखना संभव है?', answers: 45, comments: 23 },
-  { id: 2, title: 'बच्चों को मोबाइल से दूर कैसे रखें?', answers: 78, comments: 34 },
-  { id: 3, title: 'विभिन्न धर्मों में विवाह के नियम - अनुभव साझा करें', answers: 112, comments: 56 },
-  { id: 4, title: 'क्या AI कुलगुरु पर भरोसा किया जा सकता है?', answers: 234, comments: 89 },
-];
-
-const events = [
-    { date: '20 अप्रैल', title: 'ऑनलाइन सत्संग - सभी धर्म एक साथ' },
-    { date: '25 अप्रैल', title: 'माता-पिता परामर्श शिविर (निःशुल्क)' },
-    { date: '30 अप्रैल', title: 'युवा संवाद - करियर और धर्म' },
-];
+type Topic = {
+  id: string;
+  title: string;
+  totalPosts: number;
+  totalComments: number;
+};
+type Event = {
+  id: string;
+  startDate: string;
+  title: string;
+};
 
 const bestPostAuthorAvatar = PlaceHolderImages.find(img => img.id === 'community-best-post-author');
 
 export default function CommunityPage() {
+  const firestore = useFirestore();
+
+  const topicsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'forumTopics'), orderBy('lastPostAt', 'desc'));
+  }, [firestore]);
+  const { data: topics, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
+
+  const eventsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'communityEvents'), orderBy('startDate', 'asc'));
+  }, [firestore]);
+  const { data: events, isLoading: eventsLoading } = useCollection<Event>(eventsQuery);
+
+  const formatEventDate = (isoDate: string) => {
+    if (!isoDate) return '';
+    try {
+      const date = new Date(isoDate);
+      const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' };
+      return date.toLocaleDateString('hi-IN', options);
+    } catch (e) {
+      return isoDate;
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -54,12 +81,14 @@ export default function CommunityPage() {
           <CardTitle className="font-headline">🔥 आज के चर्चा विषय</CardTitle>
         </CardHeader>
         <CardContent className="space-y-0 p-0">
-          {topics.map((topic) => (
+          {topicsLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
+          {!topicsLoading && topics?.length === 0 && <p className="p-6 text-center text-muted-foreground">अभी कोई चर्चा विषय नहीं है। एक नया विषय शुरू करें।</p>}
+          {topics && topics.map((topic) => (
             <div key={topic.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border-b last:border-b-0">
               <p className="font-semibold flex-grow mb-2 md:mb-0">{topic.title}</p>
               <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
-                <span>उत्तर: {topic.answers}</span>
-                <span>टिप्पणियाँ: {topic.comments}</span>
+                <span>उत्तर: {topic.totalPosts || 0}</span>
+                <span>टिप्पणियाँ: {topic.totalComments || 0}</span>
                 <Button variant="secondary" size="sm" asChild><Link href={`/community/topic/${topic.id}`}>पढ़ें</Link></Button>
               </div>
             </div>
@@ -94,11 +123,13 @@ export default function CommunityPage() {
           <CardTitle className="font-headline">📅 आगामी सामुदायिक कार्यक्रम</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {events.map((event) => (
-            <div key={event.title} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
+          {eventsLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
+          {!eventsLoading && events?.length === 0 && <p className="p-6 text-center text-muted-foreground">अभी कोई आगामी कार्यक्रम नहीं है।</p>}
+          {events && events.map((event) => (
+            <div key={event.id} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
                 <Calendar className="h-6 w-6 text-primary"/>
                 <div>
-                    <p className="font-bold">{event.date}:</p>
+                    <p className="font-bold">{formatEventDate(event.startDate)}:</p>
                     <p>{event.title}</p>
                 </div>
             </div>
