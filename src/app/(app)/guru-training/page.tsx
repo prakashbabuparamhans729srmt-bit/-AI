@@ -1,11 +1,14 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { Search, Star, Calendar, FileText } from 'lucide-react';
+import { Search, Star, Calendar, FileText, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 
 const curriculum = [
     { year: 1, title: 'धर्म दर्शन', progress: 100, status: 'प्रमाणपत्र', details: ['सभी धर्मों का तुलनात्मक अध्ययन', 'प्रमुख ग्रंथों का सार'] },
@@ -13,20 +16,50 @@ const curriculum = [
     { year: 3, title: 'नैतिकता और नियम', progress: 40, status: 'जारी रखें', details: ['कानूनी ढांचा', 'मध्यस्थता कौशल'] },
 ];
 
-const activeGurus = [
-    { name: 'गुरु सुरेश जी', location: 'लखनऊ', families: 150, rating: 4.8, avatarSeed: 'guru-suresh' },
-    { name: 'गुरु फातिमा', location: 'हैदराबाद', families: 120, rating: 4.9, avatarSeed: 'guru-fatima' },
-    { name: 'गुरु चरण सिंह', location: 'अमृतसर', families: 200, rating: 4.7, avatarSeed: 'guru-charan' },
-    { name: 'गुरु जॉन', location: 'केरल', families: 90, rating: 4.6, avatarSeed: 'guru-john' },
-];
+type Guru = {
+    id: string;
+    userId: string;
+    city: string;
+    familiesManagedCount: number;
+    overallRating: number;
+    profileImageUrl?: string;
+    firstName: string;
+    lastName: string;
+};
 
-const workshops = [
-    { date: '10-12 मई', title: 'गुरु प्रशिक्षण शिविर - दिल्ली' },
-    { date: '17-19 मई', title: 'उन्नत परामर्श तकनीक - मुंबई' },
-    { date: '24-26 मई', title: 'डिजिटल गुरु बनना - ऑनलाइन' },
-];
+type CommunityEvent = {
+    id: string;
+    startDate: string;
+    title: string;
+};
+
 
 export default function GuruTrainingPage() {
+    const firestore = useFirestore();
+
+    const gurusQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'gurus'), orderBy('overallRating', 'desc'), limit(4));
+    }, [firestore]);
+    const { data: activeGurus, isLoading: gurusLoading } = useCollection<Guru>(gurusQuery);
+    
+    const workshopsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'communityEvents'), orderBy('startDate', 'asc'), limit(3));
+    }, [firestore]);
+    const { data: workshops, isLoading: workshopsLoading } = useCollection<CommunityEvent>(workshopsQuery);
+
+    const formatEventDate = (isoDate: string) => {
+        if (!isoDate) return '';
+        try {
+        const date = new Date(isoDate);
+        const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' };
+        return date.toLocaleDateString('hi-IN', options);
+        } catch (e) {
+        return isoDate;
+        }
+    };
+
     return (
         <div className="space-y-8">
             <Card className="text-center bg-gradient-to-br from-secondary/80 to-secondary/60 text-secondary-foreground">
@@ -80,21 +113,23 @@ export default function GuruTrainingPage() {
                         <Input placeholder="खोजें: शहर, नाम, भाषा..." className="pl-10 h-11" />
                     </div>
                     <div className="space-y-4">
-                        {activeGurus.map(guru => (
-                            <div key={guru.name} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                        {gurusLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
+                        {!gurusLoading && (!activeGurus || activeGurus.length === 0) && <p className="p-6 text-muted-foreground text-center">अभी कोई सक्रिय गुरु उपलब्ध नहीं है।</p>}
+                        {activeGurus && activeGurus.map(guru => (
+                            <div key={guru.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                                 <div className="flex items-center gap-4">
                                     <Avatar>
-                                        <AvatarImage src={`https://picsum.photos/seed/${guru.avatarSeed}/100/100`} />
-                                        <AvatarFallback>{guru.name.charAt(0)}</AvatarFallback>
+                                        <AvatarImage src={guru.profileImageUrl || `https://picsum.photos/seed/${guru.userId}/100/100`} />
+                                        <AvatarFallback>{(guru.firstName || 'G').charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <p className="font-semibold">{guru.name} - {guru.location}</p>
-                                        <p className="text-sm text-muted-foreground">{guru.families} परिवार</p>
+                                        <p className="font-semibold">{guru.firstName} {guru.lastName} - {guru.city}</p>
+                                        <p className="text-sm text-muted-foreground">{guru.familiesManagedCount || 0} परिवार</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 text-yellow-500">
                                     <Star className="h-5 w-5 fill-current" />
-                                    <span className="font-bold">{guru.rating}</span>
+                                    <span className="font-bold">{guru.overallRating || 0}</span>
                                 </div>
                             </div>
                         ))}
@@ -110,11 +145,13 @@ export default function GuruTrainingPage() {
                     <CardTitle className="font-headline">📅 आगामी कार्यशालाएं</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {workshops.map((event) => (
-                        <div key={event.title} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
+                     {workshopsLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
+                     {!workshopsLoading && (!workshops || workshops.length === 0) && <p className="p-6 text-muted-foreground text-center">अभी कोई आगामी कार्यशाला नहीं है।</p>}
+                    {workshops && workshops.map((event) => (
+                        <div key={event.id} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
                             <Calendar className="h-6 w-6 text-primary" />
                             <div>
-                                <p className="font-bold">{event.date}:</p>
+                                <p className="font-bold">{formatEventDate(event.startDate)}:</p>
                                 <p>{event.title}</p>
                             </div>
                         </div>
