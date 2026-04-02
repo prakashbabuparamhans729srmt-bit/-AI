@@ -95,6 +95,14 @@ service cloud.firestore {
     function isDocumentOwner(docData, ownerField) {
       return isSignedIn() && request.auth.uid == docData[ownerField];
     }
+    
+    /**
+     * Retrieves the familyId of the currently authenticated user.
+     * Costs one read operation.
+     */
+    function userFamilyId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId;
+    }
 
     // --------------------------------
     // User-Specific Data
@@ -108,7 +116,12 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree and allows self-creation of a profile.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      // A user can read their own profile.
+      // A user can also read the profile of another user if they belong to the same family.
+      // This is checked by comparing the familyId of the requesting user and the target user.
+      // We also ensure familyId is not null to prevent unauthorized access if data is malformed.
+      allow get: if isOwner(userId) || 
+                  (userFamilyId() != null && userFamilyId() == get(/databases/$(database)/documents/users/$(userId)).data.familyId);
       allow list: if false; // Disallow listing all users for privacy
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
@@ -185,7 +198,7 @@ service cloud.firestore {
      */
     match /families/{familyId}/goals/{goalId} {
       // Assumes the goal document has a `memberUserIds` array denormalized from the parent family.
-      allow read: if isFamilyMember(resource.data);
+      allow read: if isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data);
       allow create: if isFamilyMember(request.resource.data) && request.resource.data.familyId == familyId;
       allow update: if isFamilyMember(request.resource.data) && request.resource.data.familyId == resource.data.familyId;
       allow delete: if isFamilyMember(resource.data);
@@ -246,7 +259,7 @@ service cloud.firestore {
      */
     match /communityEvents/{eventId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && isDocumentOwner(request.resource.data, 'organizerUserId');
+      allow create: if isSignedIn() && (isDocumentOwner(request.resource.data, 'organizerUserId') || isAdmin());
       allow update: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
       allow delete: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
     }

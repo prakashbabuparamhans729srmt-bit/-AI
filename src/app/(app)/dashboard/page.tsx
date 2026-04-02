@@ -12,16 +12,11 @@ import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { aiGuruGuidance } from '@/ai/flows/ai-guru-guidance';
-import { useUser, useFirestore, useCollection, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, addDoc, getDoc, doc } from 'firebase/firestore';
 import { personalizedDailyWisdom, type PersonalizedDailyWisdomOutput } from '@/ai/flows/personalized-daily-wisdom';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const familyMembers = [
-  { name: 'राजेश', role: 'पिता', avatarId: 'family-father' },
-  { name: 'सीमा', role: 'माता', avatarId: 'family-mother' },
-  { name: 'आर्यन', role: 'पुत्र 16', avatarId: 'family-son' },
-  { name: 'अनन्या', role: 'पुत्री 12', avatarId: 'family-daughter' },
-];
 
 const quickServices = [
   { icon: <MessageSquare className="h-8 w-8" />, label: 'प्रश्न पूछें', href: '/community' },
@@ -39,6 +34,13 @@ type Message = {
   timestamp?: any;
 };
 
+type UserProfile = {
+  id: string;
+  firstName: string;
+  profileImageUrl: string;
+  roleInFamily?: string;
+}
+
 export default function DashboardPage() {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -47,6 +49,9 @@ export default function DashboardPage() {
   const [dailyWisdom, setDailyWisdom] = useState<PersonalizedDailyWisdomOutput | null>(null);
   const [isWisdomLoading, setIsWisdomLoading] = useState(true);
 
+  const [familyMembers, setFamilyMembers] = useState<UserProfile[]>([]);
+  const [isFamilyLoading, setIsFamilyLoading] = useState(true);
+
   const messagesQuery = useMemoFirebase(() => {
     if (!user) return null;
     const messagesRef = collection(firestore, `users/${user.uid}/conversations/dashboard-chat/messages`);
@@ -54,22 +59,66 @@ export default function DashboardPage() {
   }, [firestore, user]);
 
   const { data: conversation, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
+  
+  // Get user profile to find familyId
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  const { data: userProfile } = useDoc<any>(userProfileRef);
 
-  const getAgeFromRole = (role: string) => {
-    const age = parseInt(role.split(' ')[1]);
-    if (!isNaN(age)) return age;
-    if (role === 'पिता') return 40;
-    if (role === 'माता') return 35;
-    return 30; // default
-  };
+  // Get family document to find memberUserIds
+  const familyRef = useMemoFirebase(() => {
+    if (!userProfile?.familyId) return null;
+    return doc(firestore, 'families', userProfile.familyId);
+  }, [firestore, userProfile]);
+  const { data: family } = useDoc<any>(familyRef);
+
+
+  useEffect(() => {
+    const fetchFamilyMembers = async () => {
+      if (!family?.memberUserIds || !firestore) {
+        setIsFamilyLoading(false);
+        return;
+      }
+      
+      setIsFamilyLoading(true);
+      try {
+        const memberPromises = family.memberUserIds.map((memberId: string) => 
+          getDoc(doc(firestore, 'users', memberId))
+        );
+        const memberSnapshots = await Promise.all(memberPromises);
+        const membersData = memberSnapshots
+          .map(snap => snap.exists() ? snap.data() as UserProfile : null)
+          .filter((member): member is UserProfile => member !== null);
+        setFamilyMembers(membersData);
+      } catch (error) {
+        console.error("Error fetching family members:", error);
+      } finally {
+        setIsFamilyLoading(false);
+      }
+    };
+
+    fetchFamilyMembers();
+  }, [family, firestore]);
 
   useEffect(() => {
     const fetchWisdom = async () => {
+      if (!familyMembers || familyMembers.length === 0) {
+        // Can't personalize if we don't know the family yet
+        setIsWisdomLoading(false);
+        setDailyWisdom({
+            dailyThought: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन',
+            familyActivities: [],
+            childrenStories: []
+        });
+        return;
+      }
       setIsWisdomLoading(true);
       try {
         const familyMembersForApi = familyMembers.map(m => ({
-          name: m.name,
-          age: getAgeFromRole(m.role),
+          name: m.firstName,
+          age: 30, // Placeholder age
           spiritualInterests: 'General'
         }));
 
@@ -92,7 +141,7 @@ export default function DashboardPage() {
     };
 
     fetchWisdom();
-  }, []);
+  }, [familyMembers]);
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,25 +312,28 @@ export default function DashboardPage() {
           {/* Family Members */}
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-2xl">👪 परिवार के सदस्य (4)</CardTitle>
+              <CardTitle className="font-headline text-2xl">👪 परिवार के सदस्य ({familyMembers.length || 0})</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              {familyMembers.map((member) => {
-                const avatar = PlaceHolderImages.find((img) => img.id === member.avatarId);
-                return (
-                  <div key={member.name} className="flex flex-col items-center text-center space-y-2">
+              {isFamilyLoading ? (
+                <>
+                  <div className="flex flex-col items-center space-y-2"><Skeleton className="h-20 w-20 rounded-full" /><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></div>
+                  <div className="flex flex-col items-center space-y-2"><Skeleton className="h-20 w-20 rounded-full" /><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></div>
+                </>
+              ) : ( familyMembers.map((member) => (
+                  <div key={member.id} className="flex flex-col items-center text-center space-y-2">
                     <Avatar className="h-20 w-20">
-                      {avatar && <AvatarImage src={avatar.imageUrl} alt={avatar.description} data-ai-hint={avatar.imageHint} />}
-                      <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={member.profileImageUrl || `https://picsum.photos/seed/${member.id}/200/200`} alt={member.firstName || 'User'} />
+                      <AvatarFallback>{member.firstName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
-                    <p className="font-semibold">{member.name}</p>
-                    <p className="text-xs text-muted-foreground">{member.role}</p>
+                    <p className="font-semibold">{member.firstName}</p>
+                    <p className="text-xs text-muted-foreground">{member.roleInFamily || 'सदस्य'}</p>
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/profile">देखें</Link>
                     </Button>
                   </div>
-                );
-              })}
+                ))
+              )}
             </CardContent>
           </Card>
 
