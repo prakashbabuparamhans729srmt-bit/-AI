@@ -9,7 +9,7 @@ import {
   MessageCircle,
   GraduationCap,
   Settings,
-  Baby,
+  Smile,
   Scale,
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
@@ -20,7 +20,7 @@ const navItems = [
   { href: '/knowledge-hub', icon: <Library />, label: 'धर्म ज्ञान केंद्र' },
   { href: '/rules', icon: <Scale />, label: 'नियम संहिता' },
   { href: '/crisis-counseling', icon: <HeartPulse />, label: 'संकट परामर्श' },
-  { href: '/kids-corner', icon: <Baby />, label: 'बच्चों का कोना' },
+  { href: '/kids-corner', icon: <Smile />, label: 'बच्चों का कोना' },
   { href: '/community', icon: <MessageCircle />, label: 'सामुदायिक मंच' },
   { href: '/profile', icon: <Users />, label: 'परिवार प्रोफाइल' },
   { href: '/guru-training', icon: <GraduationCap />, label: 'गुरु प्रशिक्षण' },

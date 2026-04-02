@@ -1,4 +1,5 @@
-import { redirect } from 'next/navigation';
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -8,10 +9,11 @@ import {
   MessageSquare,
   Sparkles,
   LifeBuoy,
-  BrainCircuit,
-  Baby,
+  Bot,
+  Smile,
   Search,
   Mic,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +21,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Logo } from '@/components/logo';
 import { Input } from '@/components/ui/input';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const featureList = [
   {
@@ -52,14 +57,14 @@ const featureList = [
     href: '/profile'
   },
   {
-    icon: <BrainCircuit className="h-8 w-8" />,
+    icon: <Bot className="h-8 w-8" />,
     title: '24x7 AI सहायक',
     description: 'आपके आध्यात्मिक प्रश्नों का उत्तर देने के लिए हमारा एआई गुरु हमेशा उपलब्ध है।',
     href: '/community'
   },
 ];
 
-const testimonials = [
+const staticTestimonials = [
   {
     name: 'प्रिया, दिल्ली',
     avatar: PlaceHolderImages.find((img) => img.id === 'testimonial1'),
@@ -72,10 +77,28 @@ const testimonials = [
   },
 ];
 
+
+type Testimonial = {
+    id: string;
+    quote: string;
+    authorName: string;
+    authorUserId?: string;
+}
+
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
 
 export default function Home() {
-  redirect('/login');
+    const firestore = useFirestore();
+    const testimonialsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(
+        collection(firestore, 'public_testimonials'),
+        where('status', '==', 'Approved'),
+        limit(2)
+        );
+    }, [firestore]);
+
+    const { data: testimonials, isLoading: testimonialsLoading } = useCollection<Testimonial>(testimonialsQuery);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -201,32 +224,85 @@ export default function Home() {
               </p>
             </div>
             <div className="grid w-full grid-cols-1 gap-6 pt-8 md:grid-cols-2 lg:gap-12">
-              {testimonials.map((testimonial) => (
-                <Card key={testimonial.name} className="bg-background">
+              {testimonialsLoading && (
+                <>
+                  <Card className="bg-background">
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <div className="flex items-center justify-center space-x-3 pt-2">
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                          <Skeleton className="h-5 w-24" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-background">
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <div className="flex items-center justify-center space-x-3 pt-2">
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                          <Skeleton className="h-5 w-24" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+              {testimonials && testimonials.map((testimonial) => (
+                <Card key={testimonial.id} className="bg-background">
                   <CardContent className="p-6">
                     <div className="space-y-4">
-                      <p className="text-lg italic">"{testimonial.text}"</p>
+                      <p className="text-lg italic">"{testimonial.quote}"</p>
                       <div className="flex items-center justify-center space-x-3">
                         <Avatar>
-                          {testimonial.avatar && (
-                            <AvatarImage
-                              src={testimonial.avatar.imageUrl}
-                              alt={testimonial.avatar.description}
-                              data-ai-hint={testimonial.avatar.imageHint}
-                            />
-                          )}
+                          <AvatarImage
+                            src={`https://picsum.photos/seed/${testimonial.authorUserId || testimonial.id}/100/100`}
+                            alt={testimonial.authorName}
+                          />
                           <AvatarFallback>
-                            {testimonial.name.charAt(0)}
+                            {testimonial.authorName.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <cite className="font-semibold not-italic">
-                          - {testimonial.name}
+                          - {testimonial.authorName}
                         </cite>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+               {!testimonialsLoading && (!testimonials || testimonials.length === 0) && (
+                 staticTestimonials.map((testimonial) => (
+                    <Card key={testimonial.name} className="bg-background">
+                    <CardContent className="p-6">
+                        <div className="space-y-4">
+                        <p className="text-lg italic">"{testimonial.text}"</p>
+                        <div className="flex items-center justify-center space-x-3">
+                            <Avatar>
+                            {testimonial.avatar && (
+                                <AvatarImage
+                                src={testimonial.avatar.imageUrl}
+                                alt={testimonial.avatar.description}
+                                data-ai-hint={testimonial.avatar.imageHint}
+                                />
+                            )}
+                            <AvatarFallback>
+                                {testimonial.name.charAt(0)}
+                            </AvatarFallback>
+                            </Avatar>
+                            <cite className="font-semibold not-italic">
+                            - {testimonial.name}
+                            </cite>
+                        </div>
+                        </div>
+                    </CardContent>
+                    </Card>
+                ))
+               )}
             </div>
           </div>
         </section>
