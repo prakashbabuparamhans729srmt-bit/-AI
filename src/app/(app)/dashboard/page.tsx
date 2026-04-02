@@ -1,13 +1,17 @@
+'use client';
+
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight, Calendar, MessageSquare, BookOpen, HeartPulse, Sparkles, Hand, Users, Send } from 'lucide-react';
+import { ArrowRight, Calendar, MessageSquare, BookOpen, HeartPulse, Sparkles, Hand, Users, Send, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
+import { aiGuruGuidance } from '@/ai/flows/ai-guru-guidance';
 
 const familyMembers = [
   { name: 'राजेश', role: 'पिता', avatarId: 'family-father' },
@@ -25,7 +29,46 @@ const quickServices = [
   { icon: <Users className="h-8 w-8" />, label: 'बच्चों के लिए विशेष', href: '/kids-corner' },
 ];
 
+type Message = {
+  sender: 'user' | 'ai';
+  text: string;
+};
+
 export default function DashboardPage() {
+  const [conversation, setConversation] = useState<Message[]>([
+    { sender: 'user', text: 'मेरे बेटे को पढ़ाई में मन नहीं लगता।' },
+    { sender: 'ai', text: 'आर्यन की रुचि किन विषयों में है? उसे विज्ञान पसंद है, तो आप उसे विज्ञान की रोचक कहानियों और प्रयोगों के माध्यम से प्रेरित कर सकते हैं।' }
+  ]);
+  const [userInput, setUserInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userInput.trim()) return;
+
+    const userMessage: Message = { sender: 'user', text: userInput };
+    setConversation(prev => [...prev, userMessage]);
+    setIsLoading(true);
+    setUserInput('');
+
+    try {
+      // Assuming a Hindu background for now, this can be made dynamic later
+      const response = await aiGuruGuidance({ 
+        question: userInput,
+        religiousBackground: "Hindu" 
+      });
+      const aiMessage: Message = { sender: 'ai', text: response.guidance };
+      setConversation(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error("Error with AI guidance:", error);
+      const errorMessage: Message = { sender: 'ai', text: 'माफ़ कीजिए, मुझे उत्तर देने में कुछ समस्या आ रही है।' };
+      setConversation(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   return (
     <div className="grid gap-8">
       {/* Date and Welcome */}
@@ -72,20 +115,36 @@ export default function DashboardPage() {
               <CardTitle className="font-headline text-2xl">💬 कुलगुरु से वार्तालाप</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-col gap-4 max-h-60 overflow-y-auto p-2">
-                <div className="flex justify-end">
-                    <p className="max-w-[80%] rounded-lg bg-muted p-3 text-right">मेरे बेटे को पढ़ाई में मन नहीं लगता।</p>
-                </div>
-                <div className="flex justify-start">
-                    <p className="max-w-[80%] rounded-lg bg-secondary text-secondary-foreground p-3">आर्यन की रुचि किन विषयों में है? उसे विज्ञान पसंद है, तो आप उसे विज्ञान की रोचक कहानियों और प्रयोगों के माध्यम से प्रेरित कर सकते हैं।</p>
-                </div>
+              <div className="flex flex-col gap-4 max-h-60 overflow-y-auto p-4 border rounded-md">
+                {conversation.map((message, index) => (
+                   <div key={index} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <p className={`max-w-[80%] rounded-lg p-3 ${message.sender === 'user' ? 'bg-muted text-right' : 'bg-secondary text-secondary-foreground'}`}>
+                        {message.text}
+                      </p>
+                  </div>
+                ))}
+                 {isLoading && (
+                    <div className="flex justify-start">
+                        <p className="max-w-[80%] rounded-lg bg-secondary text-secondary-foreground p-3 flex items-center gap-2">
+                           <Loader2 className="h-4 w-4 animate-spin"/>
+                           <span>लिख रहा है...</span>
+                        </p>
+                    </div>
+                )}
               </div>
               <Separator />
-              <form>
+              <form onSubmit={handleChatSubmit}>
                <div className="flex w-full items-center space-x-2">
-                <Input type="text" placeholder="यहाँ लिखें..." className="flex-1" />
-                <Button type="submit">
-                  <Send className="h-4 w-4" />
+                <Input 
+                  type="text" 
+                  placeholder="यहाँ लिखें..." 
+                  className="flex-1"
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  disabled={isLoading}
+                />
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   <span className="sr-only">भेजें</span>
                 </Button>
               </div>

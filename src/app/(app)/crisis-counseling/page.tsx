@@ -1,17 +1,37 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Headset, MessageCircle, Music, BookOpen, Wind } from 'lucide-react';
+import { Headset, MessageCircle, Music, BookOpen, Wind, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { crisisCounseling, CrisisCounselingInput, CrisisCounselingOutput } from '@/ai/flows/ai-guru-crisis-counseling';
 
-const crisisTypes = [
-  '😢 पारिवारिक कलह', '😟 आर्थिक तनाव', '😔 मृत्यु शोक',
-  '😤 क्रोध समस्या', '😨 भय/चिंता', '😞 अकेलापन',
-  '🍷 नशे की लत', '💔 वैवाहिक समस्या', '👴 बुजुर्ग देखभाल',
-];
+// Mapping from Hindi UI text to English schema values
+const crisisTypeMap: { [key: string]: CrisisCounselingInput['crisisType'] } = {
+  '😢 पारिवारिक कलह': 'Family discord',
+  '😟 आर्थिक तनाव': 'Financial stress',
+  '😔 मृत्यु शोक': 'Grief of death',
+  '😤 क्रोध समस्या': 'Anger issues',
+  '😨 भय/चिंता': 'Fear/Anxiety',
+  '😞 अकेलापन': 'Loneliness',
+  '🍷 नशे की लत': 'Addiction',
+  '💔 वैवाहिक समस्या': 'Marital problems',
+  '👴 बुजुर्ग देखभाल': 'Elderly care',
+};
 
-const religions = ['हिंदू', 'इस्लाम', 'ईसाई', 'बौद्ध', 'सिख'];
+const crisisTypes = Object.keys(crisisTypeMap);
+
+const religionMap: { [key: string]: string } = {
+    'हिंदू': 'Hindu',
+    'इस्लाम': 'Islam',
+    'ईसाई': 'Christian',
+    'बौद्ध': 'Buddhist',
+    'सिख': 'Sikh',
+    'यहूदी': 'Jewish',
+    'आस्तिक': 'Interfaith/Universal Spiritual Principles'
+};
+const religions = ['हिंदू', 'इस्लाम', 'ईसाई', 'बौद्ध', 'सिख', 'यहूदी'];
+
 
 const immediateHelp = [
     { icon: <Music />, text: '5 मिनट का ध्यान संगीत', action: 'सुनें', href: '/wip' },
@@ -23,6 +43,33 @@ const immediateHelp = [
 export default function CrisisCounselingPage() {
   const [selectedCrisis, setSelectedCrisis] = useState<string | null>(null);
   const [selectedReligion, setSelectedReligion] = useState<string | null>(null);
+  const [aiResponse, setAiResponse] = useState<CrisisCounselingOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedCrisis && selectedReligion) {
+      const getGuidance = async () => {
+        setIsLoading(true);
+        setAiResponse(null);
+        try {
+          const crisis = crisisTypeMap[selectedCrisis];
+          const religion = religionMap[selectedReligion];
+          const response = await crisisCounseling({
+            crisisType: crisis,
+            religiousPreference: religion as any,
+          });
+          setAiResponse(response);
+        } catch (error) {
+          console.error("Error fetching AI guidance:", error);
+          // Optionally, set an error state to show in the UI
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      getGuidance();
+    }
+  }, [selectedCrisis, selectedReligion]);
+
 
   return (
     <div className="space-y-8">
@@ -48,17 +95,18 @@ export default function CrisisCounselingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">समस्या चुनें:</CardTitle>
+          <CardTitle className="font-headline text-2xl">1. समस्या चुनें:</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {crisisTypes.map((crisis) => (
             <Button
               key={crisis}
               variant={selectedCrisis === crisis ? 'default' : 'outline'}
-              className="h-auto py-3"
+              className="h-auto py-3 text-base"
               onClick={() => {
                 setSelectedCrisis(crisis);
-                setSelectedReligion(null);
+                setSelectedReligion(null); // Reset religion when crisis changes
+                setAiResponse(null); // Reset AI response
               }}
             >
               {crisis}
@@ -67,33 +115,61 @@ export default function CrisisCounselingPage() {
         </CardContent>
       </Card>
 
-      {selectedCrisis === '😔 मृत्यु शोक' && (
+      {selectedCrisis && (
         <Card className="border-primary">
           <CardHeader>
-            <CardTitle className="font-headline text-primary">आपने चुना: 😔 मृत्यु का शोक</CardTitle>
+            <CardTitle className="font-headline text-primary">2. मार्गदर्शन के लिए अपनी आस्था चुनें:</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <h3 className="font-semibold text-lg">कुलगुरु का संदेश:</h3>
-            <p>
-              प्रिय सदस्य, मैं समझता हूँ यह समय बहुत कठिन है। विभिन्न धर्मों में मृत्यु के बाद के जीवन की अवधारणाएं हैं जो सांत्वना देती हैं:
-            </p>
-            <ul className="list-none space-y-2 pl-0">
-                <li className="flex items-start"><span className="mr-2">🕉️</span> <strong>हिंदू:</strong> आत्मा अमर है, नए शरीर में जाती है।</li>
-                <li className="flex items-start"><span className="mr-2">☪️</span> <strong>इस्लाम:</strong> आत्मा अल्लाह के पास जाती है, एक बेहतर स्थान पर।</li>
-                <li className="flex items-start"><span className="mr-2">✝️</span> <strong>ईसाई:</strong> स्वर्ग में शांति और आनंद का जीवन।</li>
-                <li className="flex items-start"><span className="mr-2">☸️</span> <strong>बौद्ध:</strong> पुनर्जन्म का चक्र, कर्म के अनुसार।</li>
-            </ul>
-            <p className="font-semibold pt-4">क्या आप किसी विशेष धर्म के अनुसार मार्गदर्शन चाहेंगे?</p>
             <div className="flex flex-wrap gap-2">
                 {religions.map(religion => (
-                   <Button key={religion} variant={selectedReligion === religion ? 'default' : 'secondary'} onClick={() => setSelectedReligion(religion)}>
+                   <Button key={religion} variant={selectedReligion === religion ? 'secondary' : 'outline'} onClick={() => setSelectedReligion(religion)}>
                        {religion}
                    </Button>
                 ))}
+                <Button variant={selectedReligion === 'आस्तिक' ? 'secondary' : 'outline'} onClick={() => setSelectedReligion('आस्तिक')}>
+                    आस्तिक (कोई विशेष धर्म नहीं)
+                </Button>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {isLoading && (
+         <Card>
+            <CardContent className="p-6 flex justify-center items-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-lg">आपके लिए मार्गदर्शन तैयार किया जा रहा है...</p>
+            </CardContent>
+        </Card>
+      )}
+
+      {aiResponse && !isLoading && (
+        <Card className="bg-accent/10">
+          <CardHeader>
+            <CardTitle className="font-headline text-2xl text-accent-foreground">🧘 कुलगुरु का मार्गदर्शन</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 text-lg">
+            <div>
+              <h3 className="font-bold text-xl mb-2">संदेश:</h3>
+              <p>{aiResponse.message}</p>
+            </div>
+            <div>
+              <h3 className="font-bold text-xl mb-2">संबंधित शिक्षाएँ:</h3>
+              <p className="whitespace-pre-wrap">{aiResponse.relevantTeachings}</p>
+            </div>
+            <div>
+              <h3 className="font-bold text-xl mb-2">व्यावहारिक कदम:</h3>
+              <ul className="list-disc pl-5 space-y-2">
+                {aiResponse.practicalSteps.map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+        
 
         <Card id="immediate-help">
             <CardHeader>

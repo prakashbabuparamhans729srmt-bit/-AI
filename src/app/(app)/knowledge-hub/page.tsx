@@ -1,7 +1,10 @@
+'use client';
+
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Mic } from 'lucide-react';
+import { Search, Mic, Loader2 } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -17,6 +20,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import Link from 'next/link';
+import { compareInterfaithConcept, InterfaithConceptComparisonOutput } from '@/ai/flows/interfaith-concept-comparison-flow';
+
 
 const religions = [
   { name: 'हिंदू', icon: '🕉️' },
@@ -43,6 +48,26 @@ const expertVideos = [
 
 
 export default function KnowledgeHubPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [aiResponse, setAiResponse] = useState<InterfaithConceptComparisonOutput | null>(null);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) return;
+
+    setIsLoading(true);
+    setAiResponse(null);
+    try {
+      const response = await compareInterfaithConcept({ concept: searchTerm });
+      setAiResponse(response);
+    } catch (error) {
+      console.error("Error fetching comparison:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -50,14 +75,24 @@ export default function KnowledgeHubPage() {
         <p className="text-muted-foreground mt-2">खोजें, सीखें, और तुलना करें।</p>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input placeholder="धर्म, अवधारणा या प्रश्न खोजें..." className="pl-10 pr-12 text-lg h-12" />
-        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10">
-          <Mic className="h-5 w-5" />
-          <span className="sr-only">बोलकर खोजें</span>
-        </Button>
-      </div>
+      <form onSubmit={handleSearch}>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input 
+            placeholder="धर्म, अवधारणा या प्रश्न खोजें (जैसे 'पाप की अवधारणा', 'स्वर्ग', 'कर्म')..." 
+            className="pl-10 pr-24 text-lg h-12" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Button variant="ghost" size="icon" type="button" className="absolute right-12 top-1/2 -translate-y-1/2 h-10 w-10">
+            <Mic className="h-5 w-5" />
+            <span className="sr-only">बोलकर खोजें</span>
+          </Button>
+          <Button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 h-10" disabled={isLoading}>
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "खोजें"}
+          </Button>
+        </div>
+      </form>
 
       <Card>
         <CardHeader>
@@ -75,50 +110,67 @@ export default function KnowledgeHubPage() {
         </CardContent>
       </Card>
       
-      <Card className="bg-primary/10">
-        <CardHeader>
-          <CardTitle className="font-headline text-primary">✨ आज का विशेष: "पाप की अवधारणा - विभिन्न धर्मों में"</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger className="font-semibold text-lg">📖 हिंदू धर्म में पाप</AccordionTrigger>
-              <AccordionContent className="text-base">
-                पाप अज्ञान से उत्पन्न होता है। कर्म सिद्धांत के अनुसार, प्रत्येक कर्म का फल मिलता है। पाप कर्मों से बचने के लिए धर्म का पालन आवश्यक है।
-                <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger className="font-semibold text-lg">📖 इस्लाम में पाप (गुनाह)</AccordionTrigger>
-              <AccordionContent className="text-base">
-                इस्लाम में गुनाह अल्लाह की आज्ञा का उल्लंघन है। तौबा (पश्चाताप) के माध्यम से अल्लाह से क्षमा मांगी जा सकती है।
-                 <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-3">
-              <AccordionTrigger className="font-semibold text-lg">📖 ईसाई धर्म में पाप (Sin)</AccordionTrigger>
-              <AccordionContent className="text-base">
-                ईसाई धर्म में मूल पाप (Original Sin) और व्यक्तिगत पाप की अवधारणा है। यीशु मसीह में विश्वास के द्वारा मुक्ति और पापों से क्षमा मिलती है।
-                 <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
-              </AccordionContent>
-            </AccordionItem>
-             <AccordionItem value="item-4">
-              <AccordionTrigger className="font-semibold text-lg">🔬 वैज्ञानिक दृष्टिकोण</AccordionTrigger>
-              <AccordionContent className="text-base">
-                मनोवैज्ञानिक और समाजशास्त्रीय दृष्टिकोण से, पाप की अवधारणा सामाजिक मानदंडों और नैतिक कोड के उल्लंघन से जुड़ी है जो समूह के सामंजस्य को बनाए रखने में मदद करती है।
-                 <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
-              </AccordionContent>
-            </AccordionItem>
-             <AccordionItem value="item-5">
-              <AccordionTrigger className="font-semibold text-lg text-primary">🤔 तुलनात्मक अध्ययन</AccordionTrigger>
-              <AccordionContent className="text-base">
-                अधिकांश धर्मों में समान नैतिक सिद्धांत पाए जाते हैं, जैसे हत्या, चोरी और झूठ बोलने की मनाही। ये सिद्धांत सार्वभौमिक मानवीय मूल्यों को दर्शाते हैं।
-                 <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">तुलना देखें</Link></Button>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card>
+      {isLoading && (
+         <Card>
+            <CardContent className="p-6 flex justify-center items-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-lg">आपके लिए जानकारी खोजी जा रही है...</p>
+            </CardContent>
+        </Card>
+      )}
+
+      {aiResponse && !isLoading && (
+        <Card className="bg-primary/10">
+          <CardHeader>
+            <CardTitle className="font-headline text-primary">✨ तुलनात्मक अध्ययन: "{aiResponse.concept}"</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full" defaultValue={aiResponse.comparisons[0]?.faith}>
+              {aiResponse.comparisons.map((item) => (
+                 <AccordionItem value={item.faith} key={item.faith}>
+                    <AccordionTrigger className="font-semibold text-lg">📖 {item.faith}</AccordionTrigger>
+                    <AccordionContent className="text-base">
+                      {item.perspective}
+                    </AccordionContent>
+                 </AccordionItem>
+              ))}
+            </Accordion>
+          </CardContent>
+        </Card>
+      )}
+
+      {!aiResponse && !isLoading && (
+          <Card className="bg-primary/10">
+            <CardHeader>
+            <CardTitle className="font-headline text-primary">✨ आज का विशेष: "पाप की अवधारणा - विभिन्न धर्मों में"</CardTitle>
+            </CardHeader>
+            <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="item-1">
+                <AccordionTrigger className="font-semibold text-lg">📖 हिंदू धर्म में पाप</AccordionTrigger>
+                <AccordionContent className="text-base">
+                    पाप अज्ञान से उत्पन्न होता है। कर्म सिद्धांत के अनुसार, प्रत्येक कर्म का फल मिलता है। पाप कर्मों से बचने के लिए धर्म का पालन आवश्यक है।
+                    <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
+                </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-2">
+                <AccordionTrigger className="font-semibold text-lg">📖 इस्लाम में पाप (गुनाह)</AccordionTrigger>
+                <AccordionContent className="text-base">
+                    इस्लाम में गुनाह अल्लाह की आज्ञा का उल्लंघन है। तौबा (पश्चाताप) के माध्यम से अल्लाह से क्षमा मांगी जा सकती है।
+                    <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
+                </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-3">
+                <AccordionTrigger className="font-semibold text-lg">📖 ईसाई धर्म में पाप (Sin)</AccordionTrigger>
+                <AccordionContent className="text-base">
+                    ईसाई धर्म में मूल पाप (Original Sin) और व्यक्तिगत पाप की अवधारणा है। यीशु मसीह में विश्वास के द्वारा मुक्ति और पापों से क्षमा मिलती है।
+                    <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
+                </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+            </CardContent>
+        </Card>
+      )}
 
       <Card>
           <CardHeader>
