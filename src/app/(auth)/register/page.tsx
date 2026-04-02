@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [familyName, setFamilyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,8 +76,8 @@ export default function RegisterPage() {
             const userProfile = {
                 id: newUser.uid,
                 familyId: familyId,
-                firstName: email.split('@')[0], // Using the first part of email as first name
-                lastName: '',
+                firstName: firstName,
+                lastName: lastName,
                 dateOfBirth: '', // Placeholder
                 gender: '', // Placeholder
                 email: newUser.email,
@@ -124,6 +126,16 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="first-name">पहला नाम</Label>
+                    <Input id="first-name" placeholder="उदा. राजेश" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="last-name">अंतिम नाम</Label>
+                    <Input id="last-name" placeholder="उदा. शर्मा" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="family-name">परिवार का नाम</Label>
               <Input 
