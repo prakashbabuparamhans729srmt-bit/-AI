@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { aiGuruGuidance } from '@/ai/flows/ai-guru-guidance';
+import { useUser, useFirestore, useCollection, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
 
 const familyMembers = [
   { name: 'राजेश', role: 'पिता', avatarId: 'family-father' },
@@ -30,39 +32,86 @@ const quickServices = [
 ];
 
 type Message = {
-  sender: 'user' | 'ai';
-  text: string;
+  id?: string;
+  senderType: 'User' | 'AI';
+  content: string;
+  timestamp?: any;
 };
 
 export default function DashboardPage() {
-  const [conversation, setConversation] = useState<Message[]>([
-    { sender: 'user', text: 'मेरे बेटे को पढ़ाई में मन नहीं लगता।' },
-    { sender: 'ai', text: 'आर्यन की रुचि किन विषयों में है? उसे विज्ञान पसंद है, तो आप उसे विज्ञान की रोचक कहानियों और प्रयोगों के माध्यम से प्रेरित कर सकते हैं।' }
-  ]);
+  const { user } = useUser();
+  const firestore = useFirestore();
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const messagesQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    const messagesRef = collection(firestore, `users/${user.uid}/conversations/dashboard-chat/messages`);
+    return query(messagesRef, orderBy('timestamp', 'asc'));
+  }, [firestore, user]);
+
+  const { data: conversation, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
+
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInput.trim()) return;
+    if (!userInput.trim() || !user) return;
 
-    const userMessage: Message = { sender: 'user', text: userInput };
-    setConversation(prev => [...prev, userMessage]);
+    const userMessageText = userInput;
     setIsLoading(true);
     setUserInput('');
 
+    const messagesRef = collection(firestore, `users/${user.uid}/conversations/dashboard-chat/messages`);
+    
+    const userMessageData = {
+      senderType: 'User' as const,
+      senderId: user.uid,
+      content: userMessageText,
+      timestamp: serverTimestamp(),
+      conversationId: 'dashboard-chat',
+    };
+
+    // Non-blocking write for user message
+    addDoc(messagesRef, userMessageData).catch(err => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: messagesRef.path,
+            operation: 'create',
+            requestResourceData: userMessageData
+        }));
+        console.error("Error saving user message:", err);
+    });
+
     try {
-      // Assuming a Hindu background for now, this can be made dynamic later
       const response = await aiGuruGuidance({ 
-        question: userInput,
+        question: userMessageText,
         religiousBackground: "Hindu" 
       });
-      const aiMessage: Message = { sender: 'ai', text: response.guidance };
-      setConversation(prev => [...prev, aiMessage]);
+      
+      const aiMessageData = {
+        senderType: 'AI' as const,
+        content: response.guidance,
+        timestamp: serverTimestamp(),
+        conversationId: 'dashboard-chat',
+      };
+
+      // Non-blocking write for AI message
+      addDoc(messagesRef, aiMessageData).catch(err => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: messagesRef.path,
+              operation: 'create',
+              requestResourceData: aiMessageData
+          }));
+          console.error("Error saving AI message:", err);
+      });
+      
     } catch (error) {
       console.error("Error with AI guidance:", error);
-      const errorMessage: Message = { sender: 'ai', text: 'माफ़ कीजिए, मुझे उत्तर देने में कुछ समस्या आ रही है।' };
-      setConversation(prev => [...prev, errorMessage]);
+      const errorMessageData = {
+        senderType: 'AI' as const,
+        content: 'माफ़ कीजिए, मुझे उत्तर देने में कुछ समस्या आ रही है।',
+        timestamp: serverTimestamp(),
+        conversationId: 'dashboard-chat',
+      };
+      addDoc(messagesRef, errorMessageData); // Also save error message to chat
     } finally {
       setIsLoading(false);
     }
@@ -116,10 +165,15 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-4 max-h-60 overflow-y-auto p-4 border rounded-md">
-                {conversation.map((message, index) => (
-                   <div key={index} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <p className={`max-w-[80%] rounded-lg p-3 ${message.sender === 'user' ? 'bg-muted text-right' : 'bg-secondary text-secondary-foreground'}`}>
-                        {message.text}
+                {(messagesLoading && !conversation) && (
+                    <div className="flex justify-center items-center h-40">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                )}
+                {conversation && conversation.map((message) => (
+                   <div key={message.id} className={`flex ${message.senderType === 'User' ? 'justify-end' : 'justify-start'}`}>
+                      <p className={`max-w-[80%] rounded-lg p-3 ${message.senderType === 'User' ? 'bg-muted text-right' : 'bg-secondary text-secondary-foreground'}`}>
+                        {message.content}
                       </p>
                   </div>
                 ))}
@@ -137,13 +191,13 @@ export default function DashboardPage() {
                <div className="flex w-full items-center space-x-2">
                 <Input 
                   type="text" 
-                  placeholder="यहाँ लिखें..." 
+                  placeholder={user ? "यहाँ लिखें..." : "बातचीत करने के लिए कृपया लॉग इन करें"}
                   className="flex-1"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || !user}
                 />
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading || !user}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   <span className="sr-only">भेजें</span>
                 </Button>
