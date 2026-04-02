@@ -11,6 +11,7 @@ import { CheckCircle, Edit, Target, Plus, Send, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { differenceInYears } from 'date-fns';
 
 type Goal = {
   id: string;
@@ -22,11 +23,12 @@ type UserProfile = {
     id: string;
     firstName: string;
     lastName: string;
-    dateOfBirth: string;
+    dateOfBirth: string; // YYYY-MM-DD format
     gender: string;
     profileImageUrl: string;
     generalInterests?: string[];
     religiousAffiliationId?: string;
+    educationLevel?: string;
 }
 
 const personalizedContent = [
@@ -88,7 +90,18 @@ export default function ProfilePage() {
         updateDocumentNonBlocking(goalDocRef, { status: newStatus });
     };
 
-    if (isUserLoading || isProfileLoading) {
+    const calculateAge = (dob: string) => {
+        if (!dob) return null;
+        try {
+            return differenceInYears(new Date(), new Date(dob));
+        } catch (e) {
+            return null;
+        }
+    };
+    
+    const userAge = userProfile?.dateOfBirth ? calculateAge(userProfile.dateOfBirth) : null;
+
+    if (isUserLoading || (isProfileLoading && !userProfile)) {
         return (
             <div className="space-y-8">
                 <Card>
@@ -103,7 +116,7 @@ export default function ProfilePage() {
                 </Card>
                  <Card>
                     <CardHeader><CardTitle className="font-headline text-2xl">🎯 आपके लक्ष्य</CardTitle></CardHeader>
-                    <CardContent><Loader2 className="mx-auto h-8 w-8 animate-spin" /></CardContent>
+                    <CardContent><div className="flex justify-center p-4"><Loader2 className="mx-auto h-8 w-8 animate-spin" /></div></CardContent>
                 </Card>
             </div>
         );
@@ -128,9 +141,14 @@ export default function ProfilePage() {
           </Avatar>
           <div className="flex-grow text-center md:text-left">
             <h1 className="text-3xl font-bold font-headline">{userProfile?.firstName || 'उपयोगकर्ता'} {userProfile?.lastName || ''}</h1>
-            <p className="text-muted-foreground">आयु: {userProfile?.dateOfBirth ? 'Not set' : '16 वर्ष (उदा.)'} | कक्षा: 11वीं (विज्ञान) (उदा.)</p>
-            <p className="text-muted-foreground">रुचियां: {userProfile?.generalInterests?.join(', ') || 'भौतिकी, खगोल विज्ञान, क्रिकेट (उदा.)'}</p>
-            <p className="text-muted-foreground">धर्म: {userProfile?.religiousAffiliationId || 'हिंदू (जिज्ञासु)'}</p>
+            <p className="text-muted-foreground">
+                {userAge ? `आयु: ${userAge} वर्ष` : ''}
+                {userAge && userProfile?.educationLevel ? ' | ' : ''}
+                {userProfile?.educationLevel ? `शिक्षा: ${userProfile.educationLevel}`: ''}
+                {!userAge && !userProfile?.educationLevel ? 'आयु और शिक्षा की जानकारी उपलब्ध नहीं है' : ''}
+            </p>
+            <p className="text-muted-foreground">रुचियां: {userProfile?.generalInterests?.join(', ') || 'अभी कोई रुचि नहीं जोड़ी गई'}</p>
+            <p className="text-muted-foreground">धर्म: {userProfile?.religiousAffiliationId || 'अभी कोई धर्म नहीं जोड़ा गया'}</p>
           </div>
           <Button variant="outline" asChild><Link href="/wip"><Edit className="mr-2 h-4 w-4" />प्रोफाइल संपादित करें</Link></Button>
         </CardContent>
@@ -159,7 +177,7 @@ export default function ProfilePage() {
             <CardTitle className="font-headline text-2xl">🎯 आपके लक्ष्य</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-            {areGoalsLoading && <Loader2 className="h-6 w-6 animate-spin" />}
+            {areGoalsLoading && <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}
             {goals && goals.map(goal => (
                 <div key={goal.id} className={`flex items-center justify-between p-3 rounded-lg ${goal.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/50' : 'bg-muted'}`}>
                     <div className="flex items-center gap-3">
