@@ -8,9 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
-import { useAuth, useFirestore, useUser, setDocumentNonBlocking } from '@/firebase';
+import { useAuth, useFirestore, useUser, setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -33,25 +33,57 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!familyName.trim()) {
+        toast({
+            variant: 'destructive',
+            title: 'परिवार का नाम आवश्यक है',
+            description: 'कृपया अपने परिवार का नाम दर्ज करें।',
+        });
+        return;
+    }
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = userCredential.user;
 
-      // Create user profile in Firestore
-      const userDocRef = doc(firestore, 'users', newUser.uid);
-      const userProfile = {
-        id: newUser.uid,
-        familyId: null,
-        firstName: familyName || email.split('@')[0],
-        lastName: familyName || 'User',
-        dateOfBirth: '', // Placeholder
-        gender: '', // Placeholder
-        email: newUser.email,
-        profileImageUrl: newUser.photoURL || `https://picsum.photos/seed/${newUser.uid}/200/200`
+      // Create a new family and user profile
+      const familiesColRef = collection(firestore, 'families');
+      const familyData = {
+          familyName: familyName,
+          headOfFamilyUserId: newUser.uid,
+          memberUserIds: [newUser.uid],
+          registrationDate: serverTimestamp(),
       };
-      
-      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+
+      addDocumentNonBlocking(familiesColRef, familyData)
+        .then(familyDocRef => {
+            if (!familyDocRef) {
+                console.error("Failed to create family document.");
+                // Optionally show a toast to the user about the failure
+                return;
+            };
+
+            const familyId = familyDocRef.id;
+
+            // Also update the family document with its own ID for easier querying later
+            const familyDocWithIdRef = doc(firestore, 'families', familyId);
+            updateDocumentNonBlocking(familyDocWithIdRef, { id: familyId });
+
+            // Create user profile in Firestore and link it to the family
+            const userDocRef = doc(firestore, 'users', newUser.uid);
+            const userProfile = {
+                id: newUser.uid,
+                familyId: familyId,
+                firstName: email.split('@')[0], // Using the first part of email as first name
+                lastName: '',
+                dateOfBirth: '', // Placeholder
+                gender: '', // Placeholder
+                email: newUser.email,
+                profileImageUrl: newUser.photoURL || `https://picsum.photos/seed/${newUser.uid}/200/200`
+            };
+            
+            setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+        });
 
       toast({
         title: 'पंजीकरण सफल',

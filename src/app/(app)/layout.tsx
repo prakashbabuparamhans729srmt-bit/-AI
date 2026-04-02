@@ -1,3 +1,5 @@
+'use client';
+
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,8 +15,42 @@ import { Logo } from '@/components/logo';
 import { MainNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
 import Link from 'next/link';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
+type UserProfile = {
+  familyId?: string;
+};
+
+type Family = {
+  familyName?: string;
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  const familyRef = useMemoFirebase(() => {
+    // Check if userProfile and familyId exist
+    if (!userProfile?.familyId) return null;
+    return doc(firestore, 'families', userProfile.familyId);
+  }, [firestore, userProfile]);
+  const { data: family, isLoading: isFamilyLoading } = useDoc<Family>(familyRef);
+  
+  // Determine the family name to display
+  const familyName = isUserLoading || isProfileLoading || isFamilyLoading 
+    ? '...' // Show loading indicator
+    : (user && user.isAnonymous)
+      ? 'अतिथि'
+      : (family?.familyName || 'परिवार');
+
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -37,7 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex gap-2 items-center">
               <SidebarTrigger className="md:hidden" />
               <div className="hidden md:block font-headline text-2xl">
-                🌞 नमस्ते शर्मा परिवार!
+                🌞 नमस्ते {familyName}!
               </div>
             </div>
 
