@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
 import { CheckCircle, Edit, Target, Plus, Send, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
@@ -30,6 +30,12 @@ type UserProfile = {
     religiousAffiliationId?: string;
     educationLevel?: string;
 }
+
+type Message = {
+  id: string;
+  senderType: 'User' | 'AI';
+  content: string;
+};
 
 const personalizedContent = [
     {
@@ -63,6 +69,15 @@ export default function ProfilePage() {
         return collection(firestore, 'users', user.uid, 'goals');
     }, [firestore, user]);
     const { data: goals, isLoading: areGoalsLoading } = useCollection<Goal>(goalsRef);
+
+    const messagesQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        const messagesRef = collection(firestore, `users/${user.uid}/conversations/dashboard-chat/messages`);
+        return query(messagesRef, orderBy('timestamp', 'desc'), limit(4));
+    }, [firestore, user]);
+    const { data: messages, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
+    const reversedMessages = useMemo(() => messages?.slice().reverse(), [messages]);
+
 
     const handleAddGoal = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -212,24 +227,19 @@ export default function ProfilePage() {
 
       <Card>
         <CardHeader>
-            <CardTitle className="font-headline text-2xl">💬 आपके और कुलगुरु के बीच वार्तालाप</CardTitle>
+            <CardTitle className="font-headline text-2xl">💬 हाल का वार्तालाप</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-            <div className="space-y-4 rounded-lg border p-4">
-                <div className="flex justify-start">
-                    <p className="max-w-[80%] rounded-lg bg-muted p-3"><strong>आप:</strong> मुझे समझ नहीं आता कि अगर भगवान है तो दुनिया में इतना दुख क्यों है?</p>
-                </div>
-                <div className="flex justify-end">
-                    <div className="max-w-[80%] rounded-lg bg-secondary text-secondary-foreground p-3 text-right">
-                        <p><strong>कुलगुरु:</strong> यह बहुत गहरा प्रश्न है। विभिन्न धर्मों में इसके उत्तर हैं:</p>
-                        <ul className="list-none text-right mt-2 space-y-1">
-                            <li>हिंदू - कर्म का सिद्धांत</li>
-                            <li>बौद्ध - दुख का कारण इच्छा</li>
-                            <li>ईसाई - स्वतंत्र इच्छा (Free Will)</li>
-                        </ul>
-                         <p className="mt-2">क्या तुम इनमें से किसी पर चर्चा करना चाहोगे?</p>
+            <div className="space-y-4 rounded-lg border p-4 min-h-[10rem] flex flex-col justify-end">
+                {messagesLoading && <div className="flex justify-center items-center h-full m-auto"><Loader2 className="h-6 w-6 animate-spin" /></div>}
+                {!messagesLoading && (!reversedMessages || reversedMessages.length === 0) && <p className="text-center text-muted-foreground m-auto">आपने अभी तक कोई बातचीत नहीं की है। डैशबोर्ड पर जाकर बातचीत शुरू करें।</p>}
+                {reversedMessages && reversedMessages.map(message => (
+                     <div key={message.id} className={`flex ${message.senderType === 'User' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-lg p-3 text-sm ${message.senderType === 'User' ? 'bg-muted text-right' : 'bg-secondary text-secondary-foreground'}`}>
+                           <p><strong>{message.senderType === 'User' ? 'आप' : 'कुलगुरु'}:</strong> {message.content}</p>
+                        </div>
                     </div>
-                </div>
+                ))}
             </div>
             <div className="flex justify-center gap-4">
                 <Button asChild><Link href="/dashboard">चर्चा जारी रखें</Link></Button>
