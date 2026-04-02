@@ -184,11 +184,11 @@ service cloud.firestore {
      * @principle Relies on denormalized authorization data (member list) to secure subcollection documents.
      */
     match /families/{familyId}/goals/{goalId} {
-      allow get: if isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data);
-      allow list: if isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data);
-      allow create: if isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data) && request.resource.data.familyId == familyId;
-      allow update: if resource != null && isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data) && request.resource.data.familyId == resource.data.familyId;
-      allow delete: if resource != null && isFamilyMember(get(/databases/$(database)/documents/families/$(familyId)).data);
+      // Assumes the goal document has a `memberUserIds` array denormalized from the parent family.
+      allow read: if isFamilyMember(resource.data);
+      allow create: if isFamilyMember(request.resource.data) && request.resource.data.familyId == familyId;
+      allow update: if isFamilyMember(request.resource.data) && request.resource.data.familyId == resource.data.familyId;
+      allow delete: if isFamilyMember(resource.data);
     }
     
     // --------------------------------

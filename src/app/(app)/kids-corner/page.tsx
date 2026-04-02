@@ -1,9 +1,14 @@
+'use client';
+
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Puzzle, Paintbrush, Music, HelpCircle, Book, Drama } from 'lucide-react';
+import { Puzzle, Paintbrush, Music, HelpCircle, Book, Drama, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 const activities = [
   { icon: <Puzzle />, label: 'नैतिकता पहेली', href: '/wip' },
@@ -14,16 +19,37 @@ const activities = [
   { icon: <Drama />, label: 'कठपुतली शो', href: '/wip' },
 ];
 
-const ageGroups = [
-  { age: '3-5 वर्ष', story: 'जानवरों की नैतिक कहानियाँ', href: '/wip' },
-  { age: '6-8 वर्ष', story: 'रामायण की सरल कहानियाँ', href: '/wip' },
-  { age: '9-12 वर्ष', story: 'महाभारत के पात्र', href: '/wip' },
-  { age: '13-15 वर्ष', story: 'धर्म और विज्ञान', href: '/wip' },
-];
+type Story = {
+  id: string;
+  title: string;
+  ageGroup: string;
+  content: string;
+  moralLesson: string;
+};
 
 const storyImage = PlaceHolderImages.find((img) => img.id === 'kids-story');
 
 export default function KidsCornerPage() {
+  const firestore = useFirestore();
+
+  const storiesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'stories'), orderBy('ageGroup'));
+  }, [firestore]);
+
+  const { data: stories, isLoading: storiesLoading } = useCollection<Story>(storiesQuery);
+
+  const groupedStories = useMemo(() => {
+    if (!stories) return {};
+    return stories.reduce((acc, story) => {
+      const group = story.ageGroup || 'अन्य';
+      (acc[group] = acc[group] || []).push(story);
+      return acc;
+    }, {} as Record<string, Story[]>);
+  }, [stories]);
+
+  const featuredStory = stories?.[0];
+
   return (
     <div className="space-y-8">
       <h1 className="text-4xl font-bold text-center font-headline">🧒 नमस्ते छोटे दोस्तों!</h1>
@@ -40,10 +66,12 @@ export default function KidsCornerPage() {
         )}
         <div className="relative p-8 md:p-12 space-y-4">
             <div className="text-yellow-300 text-4xl">⭐⭐⭐⭐⭐</div>
-            <h2 className="text-3xl font-bold font-headline">आज की कहानी: ईमानदार लकड़हारा</h2>
+            <h2 className="text-3xl font-bold font-headline">आज की कहानी: {storiesLoading ? 'लोड हो रहा है...' : featuredStory?.title || 'ईमानदार लकड़हारा'}</h2>
+            {storiesLoading && <Loader2 className="mx-auto h-8 w-8 animate-spin" />}
+            {!storiesLoading && featuredStory && <p className="max-w-2xl mx-auto">{featuredStory.moralLesson}</p>}
             <div className="flex justify-center gap-4">
-                <Button asChild><Link href="/wip">कहानी सुनें</Link></Button>
-                <Button variant="secondary" asChild><Link href="/wip">खुद पढ़ें</Link></Button>
+                <Button asChild><Link href={featuredStory ? `/wip` : '/wip'}>कहानी सुनें</Link></Button>
+                <Button variant="secondary" asChild><Link href={featuredStory ? `/wip` : '/wip'}>खुद पढ़ें</Link></Button>
                 <Button variant="outline" className="text-white border-white" asChild><Link href="/wip">रंग भरें</Link></Button>
             </div>
         </div>
@@ -70,13 +98,20 @@ export default function KidsCornerPage() {
           <CardTitle className="font-headline text-2xl">📚 आयु के अनुसार कहानियाँ</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {ageGroups.map((group) => (
-            <div key={group.age} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
-                    <span className="font-bold">{group.age}: </span>
-                    <span>{group.story}</span>
-                </div>
-              <Button variant="ghost" asChild><Link href={group.href}>देखें ►</Link></Button>
+          {storiesLoading && <div className="flex justify-center p-4"><Loader2 className="h-8 w-8 animate-spin" /></div>}
+          {!storiesLoading && Object.keys(groupedStories).length === 0 && <p className="text-center text-muted-foreground p-4">अभी कोई कहानी उपलब्ध नहीं है।</p>}
+          {!storiesLoading && Object.entries(groupedStories).map(([ageGroup, storiesInGroup]) => (
+            <div key={ageGroup}>
+                <h3 className="font-bold text-lg mt-4 mb-2 px-3 py-2 bg-muted rounded-md">{ageGroup}</h3>
+                {storiesInGroup.map((story) => (
+                    <div key={story.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted">
+                        <div>
+                            <span className="font-semibold">{story.title}</span>
+                            <p className="text-sm text-muted-foreground">{story.moralLesson}</p>
+                        </div>
+                        <Button variant="ghost" asChild><Link href={`/wip`}>देखें ►</Link></Button>
+                    </div>
+                ))}
             </div>
           ))}
         </CardContent>
