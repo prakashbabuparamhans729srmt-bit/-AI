@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { aiGuruGuidance } from '@/ai/flows/ai-guru-guidance';
 import { useUser, useFirestore, useCollection, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
+import { personalizedDailyWisdom, type PersonalizedDailyWisdomOutput } from '@/ai/flows/personalized-daily-wisdom';
 
 const familyMembers = [
   { name: 'राजेश', role: 'पिता', avatarId: 'family-father' },
@@ -43,6 +44,8 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [dailyWisdom, setDailyWisdom] = useState<PersonalizedDailyWisdomOutput | null>(null);
+  const [isWisdomLoading, setIsWisdomLoading] = useState(true);
 
   const messagesQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -51,6 +54,45 @@ export default function DashboardPage() {
   }, [firestore, user]);
 
   const { data: conversation, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
+
+  const getAgeFromRole = (role: string) => {
+    const age = parseInt(role.split(' ')[1]);
+    if (!isNaN(age)) return age;
+    if (role === 'पिता') return 40;
+    if (role === 'माता') return 35;
+    return 30; // default
+  };
+
+  useEffect(() => {
+    const fetchWisdom = async () => {
+      setIsWisdomLoading(true);
+      try {
+        const familyMembersForApi = familyMembers.map(m => ({
+          name: m.name,
+          age: getAgeFromRole(m.role),
+          spiritualInterests: 'General'
+        }));
+
+        const response = await personalizedDailyWisdom({
+          familyMembers: familyMembersForApi,
+          familySpiritualPreference: 'Hinduism',
+          currentDate: new Date().toLocaleDateString('hi-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        });
+        setDailyWisdom(response);
+      } catch (error) {
+        console.error("Error fetching daily wisdom:", error);
+        setDailyWisdom({
+            dailyThought: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन',
+            familyActivities: [],
+            childrenStories: []
+        });
+      } finally {
+        setIsWisdomLoading(false);
+      }
+    };
+
+    fetchWisdom();
+  }, []);
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,10 +174,19 @@ export default function DashboardPage() {
               <CardTitle className="font-headline text-2xl">🌄 आज का सुविचार</CardTitle>
             </CardHeader>
             <CardContent>
-              <blockquote className="text-xl italic">
-                "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन"
-              </blockquote>
-              <p className="mt-2 text-right text-muted-foreground">- श्रीमद्भगवद्गीता</p>
+              {isWisdomLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>आपके लिए विचार लोड हो रहा है...</span>
+                  </div>
+              ) : (
+                  <>
+                      <blockquote className="text-xl italic">
+                          "{dailyWisdom?.dailyThought}"
+                      </blockquote>
+                      <p className="mt-2 text-right text-muted-foreground">- कुलगुरु AI</p>
+                  </>
+              )}
             </CardContent>
             <CardFooter className="gap-2">
               <Button asChild><Link href="/wip">इस पर चिंतन करें</Link></Button>
