@@ -60,7 +60,29 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const googleUser = result.user;
+
+      // Create/merge user profile in Firestore
+      const userDocRef = doc(firestore, 'users', googleUser.uid);
+      const displayName = googleUser.displayName || '';
+      const [firstName, ...lastNameParts] = displayName.split(' ');
+      const lastName = lastNameParts.join(' ');
+
+      const userProfile = {
+        id: googleUser.uid,
+        familyId: null, // User can create/join a family later
+        firstName: firstName || 'उपयोगकर्ता',
+        lastName: lastName || '',
+        dateOfBirth: '', // Placeholder
+        gender: '', // Placeholder
+        email: googleUser.email,
+        profileImageUrl: googleUser.photoURL || `https://picsum.photos/seed/${googleUser.uid}/200/200`
+      };
+      
+      // Use non-blocking set to create/merge the profile document
+      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+
       router.push('/dashboard');
     } catch (error) {
       const authError = error as AuthError;
