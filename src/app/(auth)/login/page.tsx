@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { User, Loader2 } from 'lucide-react';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
@@ -17,6 +17,7 @@ import {
   signInAnonymously,
   AuthError,
 } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -75,7 +77,25 @@ export default function LoginPage() {
   const handleGuestSignIn = async () => {
     setIsGuestLoading(true);
     try {
-      await signInAnonymously(auth);
+      const userCredential = await signInAnonymously(auth);
+      const guestUser = userCredential.user;
+
+      // Create a user profile for the guest user
+      const userDocRef = doc(firestore, 'users', guestUser.uid);
+      const userProfile = {
+        id: guestUser.uid,
+        familyId: null, // No family for guests
+        firstName: 'अतिथि',
+        lastName: '',
+        dateOfBirth: '', // Placeholder
+        gender: '', // Placeholder
+        email: null,
+        profileImageUrl: guestUser.photoURL || `https://picsum.photos/seed/${guestUser.uid}/200/200`
+      };
+      
+      // Use non-blocking set to create the profile document
+      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+
       router.push('/dashboard');
     } catch (error) {
        const authError = error as AuthError;
