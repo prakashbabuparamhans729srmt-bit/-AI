@@ -2,9 +2,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Headset, MessageCircle, Music, BookOpen, Wind, Loader2 } from 'lucide-react';
+import { Headset, MessageCircle, Music, BookOpen, Wind, Loader2, Star } from 'lucide-react';
 import Link from 'next/link';
 import { crisisCounseling, CrisisCounselingInput, CrisisCounselingOutput } from '@/ai/flows/ai-guru-crisis-counseling';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 // Mapping from Hindi UI text to English schema values
 const crisisTypeMap: { [key: string]: CrisisCounselingInput['crisisType'] } = {
@@ -40,11 +44,39 @@ const immediateHelp = [
     { icon: <BookOpen />, text: 'प्रेरणादायक कहानी', action: 'पढ़ें', href: '/wip' },
 ];
 
+type Guru = {
+    id: string;
+    userId: string;
+    city: string;
+    overallRating: number;
+    profileImageUrl?: string;
+    firstName: string;
+    lastName: string;
+    specializations: string[];
+};
+
+const crisisToSpecializationMap: { [key: string]: string } = {
+  'Family discord': 'Family Counseling',
+  'Financial stress': 'Crisis Management',
+  'Grief of death': 'Crisis Management',
+  'Anger issues': 'Crisis Management',
+  'Fear/Anxiety': 'Crisis Management',
+  'Loneliness': 'Family Counseling',
+  'Addiction': 'Crisis Management',
+  'Marital problems': 'Family Counseling',
+  'Elderly care': 'Family Counseling',
+};
+
+
 export default function CrisisCounselingPage() {
   const [selectedCrisis, setSelectedCrisis] = useState<string | null>(null);
   const [selectedReligion, setSelectedReligion] = useState<string | null>(null);
   const [aiResponse, setAiResponse] = useState<CrisisCounselingOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const firestore = useFirestore();
+  const [relevantGurus, setRelevantGurus] = useState<Guru[] | null>(null);
+  const [isGurusLoading, setIsGurusLoading] = useState(false);
+
 
   useEffect(() => {
     if (selectedCrisis && selectedReligion) {
@@ -69,6 +101,31 @@ export default function CrisisCounselingPage() {
       getGuidance();
     }
   }, [selectedCrisis, selectedReligion]);
+
+  const crisisKey = selectedCrisis ? crisisTypeMap[selectedCrisis] : null;
+  const specialization = crisisKey ? crisisToSpecializationMap[crisisKey] : null;
+
+  const gurusQuery = useMemoFirebase(() => {
+    if (!firestore || !specialization) return null;
+    return query(collection(firestore, 'gurus'), where('specializations', 'array-contains', specialization), where('isApproved', '==', true), limit(3));
+  }, [firestore, specialization]);
+
+  const { data: foundGurus, isLoading: queryLoading } = useCollection<Guru>(gurusQuery);
+  
+  useEffect(() => {
+      setIsGurusLoading(queryLoading);
+      if(foundGurus) {
+          setRelevantGurus(foundGurus);
+      }
+  }, [foundGurus, queryLoading]);
+
+  const handleCrisisSelection = (crisis: string) => {
+    setSelectedCrisis(crisis);
+    setSelectedReligion(null); // Reset religion
+    setAiResponse(null); // Reset AI response
+    setRelevantGurus(null); // Reset gurus
+    setIsGurusLoading(true); // Start loading gurus
+  };
 
 
   return (
@@ -103,11 +160,7 @@ export default function CrisisCounselingPage() {
               key={crisis}
               variant={selectedCrisis === crisis ? 'default' : 'outline'}
               className="h-auto py-3 text-base"
-              onClick={() => {
-                setSelectedCrisis(crisis);
-                setSelectedReligion(null); // Reset religion when crisis changes
-                setAiResponse(null); // Reset AI response
-              }}
+              onClick={() => handleCrisisSelection(crisis)}
             >
               {crisis}
             </Button>
@@ -190,14 +243,53 @@ export default function CrisisCounselingPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle className="font-headline text-2xl">📞 मानव सहायता की आवश्यकता?</CardTitle>
+                <CardTitle className="font-headline text-2xl">📞 विशेषज्ञ गुरुओं से जुड़ें</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-secondary/10 rounded-lg">
-                <p>निकटतम परामर्श केंद्र: आपके शहर में 3 केंद्र उपलब्ध हैं।</p>
-                <div className="flex gap-4">
-                    <Button variant="outline" asChild><Link href="/wip">नंबर दिखाएं</Link></Button>
-                    <Button asChild><Link href="/community"><Headset className="mr-2 h-5 w-5" /> मानव गुरु से बात करें</Link></Button>
-                </div>
+            <CardContent className="space-y-4">
+                {selectedCrisis && isGurusLoading && (
+                    <div className="flex justify-center items-center p-6">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <p className="ml-2">आपके लिए विशेषज्ञ गुरु खोजे जा रहे हैं...</p>
+                    </div>
+                )}
+                {selectedCrisis && !isGurusLoading && relevantGurus && relevantGurus.length > 0 && (
+                    <>
+                        <p className="text-muted-foreground">आपकी चुनी हुई समस्या के लिए, ये गुरु आपकी सहायता कर सकते हैं:</p>
+                        <div className="space-y-4">
+                            {relevantGurus.map(guru => (
+                                <div key={guru.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                    <div className="flex items-center gap-4">
+                                        <Avatar>
+                                            <AvatarImage src={guru.profileImageUrl || `https://picsum.photos/seed/${guru.userId}/100/100`} />
+                                            <AvatarFallback>{(guru.firstName || 'G').charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-semibold">{guru.firstName} {guru.lastName} - {guru.city}</p>
+                                            <p className="text-sm text-muted-foreground">{guru.specializations.join(', ')}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 text-yellow-500">
+                                            <Star className="h-5 w-5 fill-current" />
+                                            <span className="font-bold">{guru.overallRating || 0}</span>
+                                        </div>
+                                        <Button variant="secondary" size="sm" asChild><Link href="/wip">बात करें</Link></Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+                {selectedCrisis && !isGurusLoading && (!relevantGurus || relevantGurus.length === 0) && (
+                    <p className="text-center text-muted-foreground p-4">
+                        इस विषय के लिए अभी कोई विशेषज्ञ गुरु उपलब्ध नहीं है। आप हमारे <Link href="/community" className="text-primary underline">सामुदायिक मंच</Link> पर प्रश्न पूछ सकते हैं।
+                    </p>
+                )}
+                {!selectedCrisis && (
+                     <p className="text-center text-muted-foreground p-4">
+                        मानव सहायता प्राप्त करने के लिए कृपया पहले ऊपर से कोई समस्या चुनें।
+                    </p>
+                )}
             </CardContent>
         </Card>
 
