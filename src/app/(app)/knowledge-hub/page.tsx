@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -21,7 +22,9 @@ import {
 } from '@/components/ui/table';
 import Link from 'next/link';
 import { compareInterfaithConcept, InterfaithConceptComparisonOutput } from '@/ai/flows/interfaith-concept-comparison-flow';
-
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const religions = [
   { name: 'हिंदू', icon: '🕉️' },
@@ -46,11 +49,27 @@ const expertVideos = [
     { title: 'ईसाई धर्म में प्रेम', speaker: 'फादर डिसूजा' },
 ]
 
+type Article = {
+  id: string;
+  title: string;
+  summary: string;
+  publicationDate: string;
+}
 
 export default function KnowledgeHubPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState<InterfaithConceptComparisonOutput | null>(null);
+  
+  const firestore = useFirestore();
+
+  const articlesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'knowledgeArticles'), orderBy('publicationDate', 'desc'), limit(3));
+  }, [firestore]);
+
+  const { data: articles, isLoading: articlesLoading } = useCollection<Article>(articlesQuery);
+
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,35 +159,29 @@ export default function KnowledgeHubPage() {
       )}
 
       {!aiResponse && !isLoading && (
-          <Card className="bg-primary/10">
-            <CardHeader>
-            <CardTitle className="font-headline text-primary">✨ आज का विशेष: "पाप की अवधारणा - विभिन्न धर्मों में"</CardTitle>
-            </CardHeader>
-            <CardContent>
-            <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="item-1">
-                <AccordionTrigger className="font-semibold text-lg">📖 हिंदू धर्म में पाप</AccordionTrigger>
-                <AccordionContent className="text-base">
-                    पाप अज्ञान से उत्पन्न होता है। कर्म सिद्धांत के अनुसार, प्रत्येक कर्म का फल मिलता है। पाप कर्मों से बचने के लिए धर्म का पालन आवश्यक है।
-                    <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
-                </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-2">
-                <AccordionTrigger className="font-semibold text-lg">📖 इस्लाम में पाप (गुनाह)</AccordionTrigger>
-                <AccordionContent className="text-base">
-                    इस्लाम में गुनाह अल्लाह की आज्ञा का उल्लंघन है। तौबा (पश्चाताप) के माध्यम से अल्लाह से क्षमा मांगी जा सकती है।
-                    <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
-                </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-3">
-                <AccordionTrigger className="font-semibold text-lg">📖 ईसाई धर्म में पाप (Sin)</AccordionTrigger>
-                <AccordionContent className="text-base">
-                    ईसाई धर्म में मूल पाप (Original Sin) और व्यक्तिगत पाप की अवधारणा है। यीशु मसीह में विश्वास के द्वारा मुक्ति और पापों से क्षमा मिलती है।
-                    <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
-                </AccordionContent>
-                </AccordionItem>
-            </Accordion>
-            </CardContent>
+        <Card className="bg-primary/10">
+          <CardHeader>
+            <CardTitle className="font-headline text-primary">✨ नए ज्ञान लेख</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {articlesLoading && (
+              <div className="space-y-4">
+                <div className="space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>
+                <div className="space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>
+                <div className="space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>
+              </div>
+            )}
+            {!articlesLoading && articles?.length === 0 && (
+              <p className="text-center text-muted-foreground">अभी कोई लेख उपलब्ध नहीं है।</p>
+            )}
+            {articles && articles.map((article) => (
+              <div key={article.id} className="border-b pb-4 last:border-b-0 last:pb-0">
+                <h3 className="text-lg font-semibold">{article.title}</h3>
+                <p className="text-muted-foreground mt-1">{article.summary}</p>
+                <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
+              </div>
+            ))}
+          </CardContent>
         </Card>
       )}
 
