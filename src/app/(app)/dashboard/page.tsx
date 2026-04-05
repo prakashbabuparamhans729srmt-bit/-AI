@@ -15,6 +15,7 @@ import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, addDocum
 import { collection, query, orderBy, serverTimestamp, getDoc, doc, where, limit } from 'firebase/firestore';
 import { personalizedDailyWisdom, type PersonalizedDailyWisdomOutput } from '@/ai/flows/personalized-daily-wisdom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { differenceInYears } from 'date-fns';
 
 
 const quickServices = [
@@ -43,8 +44,13 @@ type Goal = {
 type UserProfile = {
   id: string;
   firstName: string;
+  lastName: string;
   profileImageUrl: string;
   roleInFamily?: string;
+  dateOfBirth?: string; // YYYY-MM-DD format
+  spiritualInterestIds?: string[];
+  generalInterests?: string[];
+  religiousAffiliationId?: string;
 }
 
 export default function DashboardPage() {
@@ -71,7 +77,7 @@ export default function DashboardPage() {
     if (!user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
-  const { data: userProfile } = useDoc<any>(userProfileRef);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   // Get family document to find memberUserIds
   const familyRef = useMemoFirebase(() => {
@@ -109,6 +115,10 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchFamilyMembers = async () => {
       if (!family?.memberUserIds || !firestore) {
+        // If user is guest or alone, populate family members with just their profile
+        if (userProfile) {
+            setFamilyMembers([userProfile]);
+        }
         setIsFamilyLoading(false);
         return;
       }
@@ -120,7 +130,7 @@ export default function DashboardPage() {
         );
         const memberSnapshots = await Promise.all(memberPromises);
         const membersData = memberSnapshots
-          .map(snap => snap.exists() ? snap.data() as UserProfile : null)
+          .map(snap => snap.exists() ? ({ ...snap.data(), id: snap.id } as UserProfile) : null)
           .filter((member): member is UserProfile => member !== null);
         setFamilyMembers(membersData);
       } catch (error) {
@@ -131,39 +141,51 @@ export default function DashboardPage() {
     };
 
     fetchFamilyMembers();
-  }, [family, firestore]);
+  }, [family, firestore, userProfile]);
 
   useEffect(() => {
     const fetchWisdom = async () => {
-      if (!familyMembers || familyMembers.length === 0) {
-        // Can't personalize if we don't know the family yet
-        setIsWisdomLoading(false);
-        setDailyWisdom({
-            dailyThought: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन',
-            familyActivities: [],
-            childrenStories: []
-        });
+      if (!userProfile || isFamilyLoading || familyMembers.length === 0) {
+        // Don't fetch if profile or family isn't ready
         return;
       }
+      
       setIsWisdomLoading(true);
       try {
-        const familyMembersForApi = familyMembers.map(m => ({
-          name: m.firstName,
-          age: 30, // Placeholder age
-          spiritualInterests: 'General'
-        }));
+        const calculateAge = (dob: string | undefined) => {
+            if (!dob) return 30; // Default age if not provided
+            try {
+                const age = differenceInYears(new Date(), new Date(dob));
+                return age > 0 ? age : 30;
+            } catch (e) {
+                return 30;
+            }
+        };
+
+        const familyMembersForApi = familyMembers.map(m => {
+            const interests = [...(m.spiritualInterestIds || []), ...(m.generalInterests || [])];
+            return {
+                name: m.firstName,
+                age: calculateAge(m.dateOfBirth),
+                spiritualInterests: interests.length > 0 ? interests.join(', ') : 'General',
+            };
+        });
+
+        // Use the head of family's religious preference, or a default
+        const familySpiritualPreference = userProfile.religiousAffiliationId || 'Hinduism';
 
         const response = await personalizedDailyWisdom({
           familyMembers: familyMembersForApi,
-          familySpiritualPreference: 'Hinduism',
+          familySpiritualPreference: familySpiritualPreference,
           currentDate: new Date().toLocaleDateString('hi-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
         });
         setDailyWisdom(response);
       } catch (error) {
         console.error("Error fetching daily wisdom:", error);
+        // Fallback to default wisdom on error
         setDailyWisdom({
-            dailyThought: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन',
-            familyActivities: [],
+            dailyThought: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।',
+            familyActivities: ['एक साथ भोजन करें।'],
             childrenStories: []
         });
       } finally {
@@ -171,8 +193,17 @@ export default function DashboardPage() {
       }
     };
 
+    // Set a default wisdom immediately for better UX
+    if (!dailyWisdom && isWisdomLoading) {
+      setDailyWisdom({
+            dailyThought: 'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।',
+            familyActivities: ['एक साथ भोजन करें।'],
+            childrenStories: []
+      });
+    }
+
     fetchWisdom();
-  }, [familyMembers]);
+  }, [familyMembers, userProfile, isFamilyLoading]);
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
