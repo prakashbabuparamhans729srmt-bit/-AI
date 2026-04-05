@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -23,7 +22,7 @@ import {
 import Link from 'next/link';
 import { compareInterfaithConcept, InterfaithConceptComparisonOutput } from '@/ai/flows/interfaith-concept-comparison-flow';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const religions = [
@@ -43,17 +42,12 @@ const comparisonData = [
     { topic: 'तीर्थ', values: ['✅', '✅', '✅', '✅', '✅'] },
 ];
 
-const expertVideos = [
-    { title: 'सभी धर्मों में एकता', speaker: 'स्वामी रामदेव' },
-    { title: 'इस्लाम और विज्ञान', speaker: 'डॉ. जाकिर नायक' },
-    { title: 'ईसाई धर्म में प्रेम', speaker: 'फादर डिसूजा' },
-]
-
 type Article = {
   id: string;
   title: string;
   summary: string;
   publicationDate: string;
+  author?: string;
 }
 
 export default function KnowledgeHubPage() {
@@ -69,6 +63,16 @@ export default function KnowledgeHubPage() {
   }, [firestore]);
 
   const { data: articles, isLoading: articlesLoading } = useCollection<Article>(articlesQuery);
+  
+  const expertVideosQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+        collection(firestore, 'knowledgeArticles'), 
+        where('category', '==', 'विद्वानों के विचार'), 
+        limit(3)
+    );
+  }, [firestore]);
+  const { data: expertVideos, isLoading: videosLoading } = useCollection<Article>(expertVideosQuery);
 
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -214,12 +218,27 @@ export default function KnowledgeHubPage() {
               <CardTitle className="font-headline">💬 विद्वानों के विचार</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-              {expertVideos.map(video => (
-                  <div key={video.title} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <p>वीडियो: "{video.title}" - <span className="font-semibold">{video.speaker}</span></p>
+              {videosLoading && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-9 w-20" />
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <Skeleton className="h-5 w-2/3" />
+                      <Skeleton className="h-9 w-20" />
+                  </div>
+                </div>
+              )}
+              {!videosLoading && expertVideos && expertVideos.length > 0 && expertVideos.map(video => (
+                  <div key={video.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <p>वीडियो: "{video.title}" - <span className="font-semibold">{video.author}</span></p>
                       <Button variant="secondary" asChild><Link href="/wip">देखें</Link></Button>
                   </div>
               ))}
+              {!videosLoading && (!expertVideos || expertVideos.length === 0) && (
+                <p className="text-center text-muted-foreground p-4">अभी कोई वीडियो उपलब्ध नहीं है।</p>
+              )}
               <div className="text-center pt-4">
                 <Button variant="outline" asChild><Link href="/wip">सभी वीडियो देखें</Link></Button>
               </div>
