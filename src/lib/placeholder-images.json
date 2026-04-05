@@ -53,6 +53,12 @@
       "description": "Avatar for Ramesh Sharma from Jaipur, author of the week's best post.",
       "imageUrl": "https://images.unsplash.com/photo-1633367583895-08545d733dfe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYW4lMjBzbWlsaW5nfGVufDB8fHx8MTc3MjA1ODg1NHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "man smiling"
+    },
+    {
+      "id": "story-detail-hero",
+      "description": "A vibrant and enchanting illustration accompanying a children's story.",
+      "imageUrl": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxmaN0aW9uYWwlMjBsYW5kc2NhcGV8ZW58MHx8fHwxNzc4OTg2MjkzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy landscape"
     }
   ]
 }

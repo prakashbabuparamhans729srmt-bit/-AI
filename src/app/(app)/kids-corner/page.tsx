@@ -92,7 +92,7 @@ export default function KidsCornerPage() {
             {!storiesLoading && featuredStory && <p className="max-w-2xl mx-auto">{featuredStory.moralLesson}</p>}
             <div className="flex justify-center gap-4">
                 <Button asChild><Link href={featuredStory ? `/wip` : '/wip'}>कहानी सुनें</Link></Button>
-                <Button variant="secondary" asChild><Link href={featuredStory ? `/wip` : '/wip'}>खुद पढ़ें</Link></Button>
+                <Button variant="secondary" asChild><Link href={featuredStory ? `/story/${featuredStory.id}` : '/wip'}>खुद पढ़ें</Link></Button>
                 <Button variant="outline" className="text-white border-white" asChild><Link href="/wip">रंग भरें</Link></Button>
             </div>
         </div>
@@ -138,7 +138,7 @@ export default function KidsCornerPage() {
                             <span className="font-semibold">{story.title}</span>
                             <p className="text-sm text-muted-foreground">{story.moralLesson}</p>
                         </div>
-                        <Button variant="ghost" asChild><Link href={`/wip`}>देखें ►</Link></Button>
+                        <Button variant="ghost" asChild><Link href={`/story/${story.id}`}>देखें ►</Link></Button>
                     </div>
                 ))}
             </div>
