@@ -805,6 +805,17 @@
         "isFree": {
           "type": "boolean",
           "description": "Indicates whether the event is free of charge."
+        },
+        "attendeeIds": {
+          "type": "array",
+          "description": "List of UserProfile IDs who have registered for the event.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attendeeCount": {
+          "type": "number",
+          "description": "Total number of registered attendees."
         }
       },
       "required": [

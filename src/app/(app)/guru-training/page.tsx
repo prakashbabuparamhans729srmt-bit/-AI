@@ -30,7 +30,7 @@ type Guru = {
 type CommunityEvent = {
     id: string;
     startDate: string;
-    title: string;
+    name: string;
 };
 
 
@@ -152,7 +152,7 @@ export default function GuruTrainingPage() {
                             <Calendar className="h-6 w-6 text-primary" />
                             <div>
                                 <p className="font-bold">{formatEventDate(event.startDate)}:</p>
-                                <p>{event.title}</p>
+                                <p>{event.name}</p>
                             </div>
                         </div>
                     ))}

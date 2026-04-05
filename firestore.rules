@@ -283,7 +283,20 @@ service cloud.firestore {
     match /communityEvents/{eventId} {
       allow get, list: if true;
       allow create: if isSignedIn() && (isDocumentOwner(request.resource.data, 'organizerUserId') || isAdmin());
-      allow update: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
+      allow update: if resource != null && (
+        // Organizer or admin can edit
+        (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin()) ||
+        // Any signed-in user can register/unregister themselves
+        (isSignedIn() &&
+          // Only attendee fields can be changed
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendeeIds', 'attendeeCount']) &&
+          // The count must be correct
+          request.resource.data.attendeeCount == request.resource.data.attendeeIds.size() &&
+          // The user must only be adding or removing themselves
+          (request.resource.data.attendeeIds == resource.data.attendeeIds.concat([request.auth.uid]) ||
+           resource.data.attendeeIds == request.resource.data.attendeeIds.concat([request.auth.uid]))
+        )
+      );
       allow delete: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
     }
     

@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, collectionGroup, where, limit, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Calendar, Plus, Search, ThumbsUp, Mic, Loader2 } from 'lucide-react';
+import { Calendar, Plus, Search, ThumbsUp, Mic, Loader2, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 type Topic = {
   id: string;
@@ -21,7 +23,9 @@ type Topic = {
 type Event = {
   id: string;
   startDate: string;
-  title: string;
+  name: string;
+  attendeeIds?: string[];
+  attendeeCount?: number;
 };
 type Post = {
   id: string;
@@ -39,7 +43,11 @@ type UserProfile = {
 
 export default function CommunityPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const [registeringEventId, setRegisteringEventId] = useState<string | null>(null);
 
   const topicsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -85,6 +93,42 @@ export default function CommunityPage() {
       return isoDate;
     }
   };
+
+  const handleRegisterForEvent = async (event: Event) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'लॉग इन आवश्यक है', description: 'किसी कार्यक्रम में शामिल होने के लिए कृपया लॉग इन करें।' });
+        router.push('/login');
+        return;
+    }
+    setRegisteringEventId(event.id);
+    
+    const eventDocRef = doc(firestore, 'communityEvents', event.id);
+    const currentAttendeeIds = event.attendeeIds || [];
+    const isRegistered = currentAttendeeIds.includes(user.uid);
+    
+    let newAttendeeIds;
+    if (isRegistered) {
+        newAttendeeIds = currentAttendeeIds.filter(id => id !== user.uid);
+        toast({ title: 'पंजीकरण रद्द किया गया', description: `आप अब "${event.name}" कार्यक्रम में शामिल नहीं हैं।`});
+    } else {
+        newAttendeeIds = [...currentAttendeeIds, user.uid];
+        toast({ title: 'पंजीकरण सफल!', description: `आप "${event.name}" कार्यक्रम में शामिल हो गए हैं।`});
+    }
+    const newAttendeeCount = newAttendeeIds.length;
+
+    try {
+        await updateDocumentNonBlocking(eventDocRef, { 
+            attendeeIds: newAttendeeIds,
+            attendeeCount: newAttendeeCount
+        });
+    } catch (error) {
+        console.error('Error registering for event:', error);
+        toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'पंजीकरण में विफल। कृपया पुन: प्रयास करें।' });
+    } finally {
+        setRegisteringEventId(null);
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -195,19 +239,31 @@ export default function CommunityPage() {
         <CardContent className="space-y-4">
           {eventsLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
           {!eventsLoading && events?.length === 0 && <p className="p-6 text-center text-muted-foreground">अभी कोई आगामी कार्यक्रम नहीं है।</p>}
-          {events && events.map((event) => (
-            <div key={event.id} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
-                <Calendar className="h-6 w-6 text-primary"/>
-                <div>
-                    <p className="font-bold">{formatEventDate(event.startDate)}:</p>
-                    <p>{event.title}</p>
+          {events && events.map((event) => {
+            const isRegistered = user ? event.attendeeIds?.includes(user.uid) : false;
+            const isRegistering = registeringEventId === event.id;
+            return (
+                <div key={event.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-muted rounded-lg">
+                    <div className='flex items-center gap-4 flex-grow'>
+                        <Calendar className="h-6 w-6 text-primary flex-shrink-0"/>
+                        <div>
+                            <p className="font-bold">{formatEventDate(event.startDate)}: {event.name}</p>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1"><Users className="h-4 w-4"/> {event.attendeeCount || 0} लोग शामिल हो रहे हैं</p>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2 w-full sm:w-auto">
+                        <Button 
+                            onClick={() => handleRegisterForEvent(event)} 
+                            disabled={!user || isRegistering}
+                            variant={isRegistered ? "secondary" : "default"}
+                        >
+                            {isRegistering ? <Loader2 className="h-4 w-4 animate-spin"/> : (isRegistered ? 'आप शामिल हैं' : 'शामिल हों')}
+                        </Button>
+                        <Button variant="outline" asChild><Link href="/wip">याद दिलाएं</Link></Button>
+                    </div>
                 </div>
-            </div>
-          ))}
-          <div className="flex justify-center gap-4 pt-4">
-              <Button asChild><Link href="/wip">शामिल हों</Link></Button>
-              <Button variant="outline" asChild><Link href="/wip">याद दिलाएं</Link></Button>
-          </div>
+            );
+          })}
         </CardContent>
       </Card>
 
