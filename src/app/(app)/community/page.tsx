@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ const bestPostAuthorAvatar = PlaceHolderImages.find(img => img.id === 'community
 
 export default function CommunityPage() {
   const firestore = useFirestore();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const topicsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -38,6 +40,14 @@ export default function CommunityPage() {
     return query(collection(firestore, 'communityEvents'), orderBy('startDate', 'asc'));
   }, [firestore]);
   const { data: events, isLoading: eventsLoading } = useCollection<Event>(eventsQuery);
+
+  const filteredTopics = useMemo(() => {
+    if (!topics) return [];
+    if (!searchTerm.trim()) return topics;
+    return topics.filter(topic =>
+      topic.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [topics, searchTerm]);
 
   const formatEventDate = (isoDate: string) => {
     if (!isoDate) return '';
@@ -61,7 +71,12 @@ export default function CommunityPage() {
         <CardContent className="p-4 flex flex-col md:flex-row gap-4">
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="विषय या प्रश्न खोजें..." className="pl-10 pr-12 h-11" />
+            <Input 
+              placeholder="विषय या प्रश्न खोजें..." 
+              className="pl-10 pr-12 h-11"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
             <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10">
               <Mic className="h-5 w-5" />
               <span className="sr-only">बोलकर खोजें</span>
@@ -82,8 +97,12 @@ export default function CommunityPage() {
         </CardHeader>
         <CardContent className="space-y-0 p-0">
           {topicsLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
-          {!topicsLoading && topics?.length === 0 && <p className="p-6 text-center text-muted-foreground">अभी कोई चर्चा विषय नहीं है। एक नया विषय शुरू करें।</p>}
-          {topics && topics.map((topic) => (
+          {!topicsLoading && filteredTopics.length === 0 && (
+             <p className="p-6 text-center text-muted-foreground">
+              {searchTerm ? 'कोई परिणाम नहीं मिला।' : 'अभी कोई चर्चा विषय नहीं है। एक नया विषय शुरू करें।'}
+            </p>
+          )}
+          {filteredTopics.map((topic) => (
             <div key={topic.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border-b last:border-b-0">
               <p className="font-semibold flex-grow mb-2 md:mb-0">{topic.title}</p>
               <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
