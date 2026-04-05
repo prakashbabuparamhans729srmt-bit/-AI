@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy, limit, where } from 'firebase/firestore';
 import { CheckCircle, Edit, Target, Plus, Loader2 } from 'lucide-react';
@@ -12,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { differenceInYears } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 type Goal = {
   id: string;
@@ -29,6 +31,12 @@ type UserProfile = {
     generalInterests?: string[];
     religiousAffiliationId?: string;
     educationLevel?: string;
+    familyId?: string;
+}
+
+type Family = {
+    id: string;
+    familyName: string;
 }
 
 type Message = {
@@ -47,16 +55,27 @@ type Article = {
 export default function ProfilePage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
+    const { toast } = useToast();
+
+    // State for forms
     const [newGoal, setNewGoal] = useState('');
     const [isAddingGoal, setIsAddingGoal] = useState(false);
+    const [newFamilyName, setNewFamilyName] = useState('');
+    const [isCreatingFamily, setIsCreatingFamily] = useState(false);
 
+    // Firestore refs
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
         return doc(firestore, 'users', user.uid);
     }, [firestore, user]);
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-    // Query for personalized articles based on user's interests
+    const familyRef = useMemoFirebase(() => {
+        if (!userProfile?.familyId) return null;
+        return doc(firestore, 'families', userProfile.familyId);
+    }, [firestore, userProfile?.familyId]);
+    const { data: family, isLoading: isFamilyLoading } = useDoc<Family>(familyRef);
+
     const articlesQuery = useMemoFirebase(() => {
         if (!firestore || !userProfile?.generalInterests || userProfile.generalInterests.length === 0) {
             return null;
@@ -68,17 +87,6 @@ export default function ProfilePage() {
         );
     }, [firestore, userProfile]);
     const { data: personalizedArticles, isLoading: arePersonalizedArticlesLoading } = useCollection<Article>(articlesQuery);
-
-    // Group fetched articles by category
-    const groupedArticles = useMemo(() => {
-        if (!personalizedArticles) return {};
-        return personalizedArticles.reduce((acc, article) => {
-            const category = article.category || 'अन्य';
-            (acc[category] = acc[category] || []).push(article);
-            return acc;
-        }, {} as Record<string, Article[]>);
-    }, [personalizedArticles]);
-
 
     const goalsQuery = useMemoFirebase(() => {
         if (!user) return null;
@@ -92,12 +100,23 @@ export default function ProfilePage() {
         return query(messagesRef, orderBy('timestamp', 'desc'), limit(4));
     }, [firestore, user]);
     const { data: messages, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
+    
+    // Memoized derived data
     const reversedMessages = useMemo(() => messages?.slice().reverse(), [messages]);
+    const groupedArticles = useMemo(() => {
+        if (!personalizedArticles) return {};
+        return personalizedArticles.reduce((acc, article) => {
+            const category = article.category || 'अन्य';
+            (acc[category] = acc[category] || []).push(article);
+            return acc;
+        }, {} as Record<string, Article[]>);
+    }, [personalizedArticles]);
+    const userAge = userProfile?.dateOfBirth ? calculateAge(userProfile.dateOfBirth) : null;
 
-
+    // Handlers
     const handleAddGoal = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newGoal.trim() || !user) return;
+        if (!newGoal.trim() || !user || !firestore) return;
         
         setIsAddingGoal(true);
         const goalData = {
@@ -115,7 +134,6 @@ export default function ProfilePage() {
         try {
             const docRef = await addDocumentNonBlocking(goalsCollectionRef, goalData);
             if(docRef) {
-                // Now update the document with its own ID
                 await updateDocumentNonBlocking(doc(firestore, `users/${user.uid}/goals`, docRef.id), { id: docRef.id });
             }
         } catch(error) {
@@ -127,13 +145,44 @@ export default function ProfilePage() {
     };
 
     const handleToggleGoalStatus = (goal: Goal) => {
-        if (!user) return;
+        if (!user || !firestore) return;
         const goalDocRef = doc(firestore, 'users', user.uid, 'goals', goal.id);
         const newStatus = goal.status === 'Active' ? 'Completed' : 'Active';
         updateDocumentNonBlocking(goalDocRef, { status: newStatus });
     };
 
-    const calculateAge = (dob: string) => {
+    const handleCreateFamily = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newFamilyName.trim() || !user || !firestore || !userProfileRef) return;
+
+        setIsCreatingFamily(true);
+        try {
+            const familyData = {
+                familyName: newFamilyName,
+                headOfFamilyUserId: user.uid,
+                memberUserIds: [user.uid],
+                registrationDate: serverTimestamp(),
+            };
+            const familyDocRef = await addDocumentNonBlocking(collection(firestore, 'families'), familyData);
+            
+            if (!familyDocRef) throw new Error("परिवार दस्तावेज़ बनाने में विफल।");
+            const familyId = familyDocRef.id;
+
+            await updateDocumentNonBlocking(doc(firestore, 'families', familyId), { id: familyId });
+            await updateDocumentNonBlocking(userProfileRef, { familyId: familyId });
+
+            toast({ title: 'परिवार सफलतापूर्वक बनाया गया!' });
+
+        } catch (error) {
+            console.error("Error creating family:", error);
+            toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'परिवार बनाने में विफल। कृपया पुन: प्रयास करें।' });
+        } finally {
+            setIsCreatingFamily(false);
+            setNewFamilyName('');
+        }
+    };
+
+    function calculateAge(dob: string) {
         if (!dob) return null;
         try {
             return differenceInYears(new Date(), new Date(dob));
@@ -142,8 +191,7 @@ export default function ProfilePage() {
         }
     };
     
-    const userAge = userProfile?.dateOfBirth ? calculateAge(userProfile.dateOfBirth) : null;
-
+    // Render logic
     if (isUserLoading || (isProfileLoading && !userProfile)) {
         return (
             <div className="space-y-8">
@@ -197,6 +245,42 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
       
+      <Card>
+        <CardHeader>
+            <CardTitle className="font-headline text-2xl">👪 परिवार प्रबंधन</CardTitle>
+        </CardHeader>
+        <CardContent>
+            {isProfileLoading || (isFamilyLoading && userProfile?.familyId) ? (
+                <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : userProfile && family ? (
+                <div>
+                <p className="text-lg">आप <strong>{family.familyName}</strong> परिवार के सदस्य हैं।</p>
+                <p className="text-muted-foreground">आप डैशबोर्ड पर अपने परिवार के सदस्यों को देख सकते हैं।</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                <p className="text-muted-foreground">आप अभी तक किसी परिवार का हिस्सा नहीं हैं। एक नया परिवार बनाएं।</p>
+                <form onSubmit={handleCreateFamily} className="space-y-2">
+                    <Label htmlFor="family-name">नया परिवार बनाएं</Label>
+                    <div className="flex w-full items-center space-x-2">
+                    <Input 
+                        id="family-name"
+                        placeholder="उदा. शर्मा परिवार"
+                        value={newFamilyName}
+                        onChange={(e) => setNewFamilyName(e.target.value)}
+                        disabled={isCreatingFamily}
+                    />
+                    <Button type="submit" disabled={isCreatingFamily || !newFamilyName.trim()}>
+                        {isCreatingFamily ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                        <span className="hidden sm:inline ml-2">बनाएं</span>
+                    </Button>
+                    </div>
+                </form>
+                </div>
+            )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-2xl">📊 आपके लिए वैयक्तिकृत सामग्री</CardTitle>
