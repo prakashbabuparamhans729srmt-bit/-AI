@@ -59,6 +59,12 @@
       "description": "A vibrant and enchanting illustration accompanying a children's story.",
       "imageUrl": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxmaN0aW9uYWwlMjBsYW5kc2NhcGV8ZW58MHx8fHwxNzc4OTg2MjkzfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "fantasy landscape"
+    },
+    {
+      "id": "article-hero",
+      "description": "An open book with glowing pages, representing knowledge and wisdom.",
+      "imageUrl": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxrbm93bGVkZ2V8ZW58MHx8fHwxNzcyMDM4NjMxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "knowledge book"
     }
   ]
 }

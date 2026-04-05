@@ -182,7 +182,7 @@ export default function KnowledgeHubPage() {
               <div key={article.id} className="border-b pb-4 last:border-b-0 last:pb-0">
                 <h3 className="text-lg font-semibold">{article.title}</h3>
                 <p className="text-muted-foreground mt-1">{article.summary}</p>
-                <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href="/wip">पूरा पढ़ें</Link></Button>
+                <Button variant="link" className="p-0 h-auto mt-2" asChild><Link href={`/knowledge-hub/${article.id}`}>पूरा पढ़ें</Link></Button>
               </div>
             ))}
           </CardContent>
