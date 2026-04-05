@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
-import { CheckCircle, Edit, Target, Plus, Send, Loader2 } from 'lucide-react';
+import { CheckCircle, Edit, Target, Plus, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -64,11 +64,11 @@ export default function ProfilePage() {
     }, [firestore, user]);
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-    const goalsRef = useMemoFirebase(() => {
+    const goalsQuery = useMemoFirebase(() => {
         if (!user) return null;
-        return collection(firestore, 'users', user.uid, 'goals');
+        return query(collection(firestore, 'users', user.uid, 'goals'), orderBy('startDate', 'desc'));
     }, [firestore, user]);
-    const { data: goals, isLoading: areGoalsLoading } = useCollection<Goal>(goalsRef);
+    const { data: goals, isLoading: areGoalsLoading } = useCollection<Goal>(goalsQuery);
 
     const messagesQuery = useMemoFirebase(() => {
         if (!user) return null;
@@ -89,10 +89,22 @@ export default function ProfilePage() {
             status: 'Active' as const,
             startDate: serverTimestamp(),
             userId: user.uid,
+            unit: 'times',
+            frequency: 'daily',
+            targetValue: '1'
         };
 
         const goalsCollectionRef = collection(firestore, `users/${user.uid}/goals`);
-        await addDocumentNonBlocking(goalsCollectionRef, goalData);
+        
+        try {
+            const docRef = await addDocumentNonBlocking(goalsCollectionRef, goalData);
+            if(docRef) {
+                // Now update the document with its own ID
+                await updateDocumentNonBlocking(doc(firestore, `users/${user.uid}/goals`, docRef.id), { id: docRef.id });
+            }
+        } catch(error) {
+            console.error("Error adding goal:", error);
+        }
 
         setNewGoal('');
         setIsAddingGoal(false);
@@ -201,7 +213,7 @@ export default function ProfilePage() {
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => handleToggleGoalStatus(goal)}>
                         <CheckCircle className={`mr-2 h-4 w-4 ${goal.status === 'Completed' ? 'text-green-600' : ''}`}/>
-                        {goal.status === 'Completed' ? 'पूर्ण' : 'ट्रैक करें'}
+                        {goal.status === 'Completed' ? 'पूर्ण' : 'चिह्नित करें'}
                     </Button>
                 </div>
             ))}
