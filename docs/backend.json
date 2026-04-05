@@ -197,6 +197,74 @@
         "timestamp"
       ]
     },
+    "ChatChannel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatChannel",
+      "type": "object",
+      "description": "Represents a direct message channel between two or more users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the channel."
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "An array of UserProfile IDs participating in the channel.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "A snippet of the last message sent."
+        }
+      },
+      "required": [
+        "id",
+        "participantIds",
+        "createdAt",
+        "lastUpdatedAt"
+      ]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "An individual message within a chat channel.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "channelId": {
+          "type": "string"
+        },
+        "senderId": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "channelId",
+        "senderId",
+        "content",
+        "timestamp"
+      ]
+    },
     "KnowledgeArticle": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "KnowledgeArticle",
@@ -1178,6 +1246,42 @@
             {
               "name": "conversationId",
               "description": "The unique ID of the parent conversation."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique ID of the message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chat_channels/{channelId}",
+        "definition": {
+          "entityName": "ChatChannel",
+          "schema": {
+            "$ref": "#/backend/entities/ChatChannel"
+          },
+          "description": "Stores direct message channels. Access is restricted to participants listed in the 'participantIds' array.",
+          "params": [
+            {
+              "name": "channelId",
+              "description": "The unique ID of the chat channel."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chat_channels/{channelId}/messages/{messageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores individual messages within a chat channel. Access is restricted to participants of the parent channel.",
+          "params": [
+            {
+              "name": "channelId",
+              "description": "The unique ID of the parent channel."
             },
             {
               "name": "messageId",

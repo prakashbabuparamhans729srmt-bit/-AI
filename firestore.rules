@@ -286,6 +286,38 @@ service cloud.firestore {
       allow update: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
       allow delete: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
     }
+    
+    // --------------------------------
+    // Direct Chat Channels
+    // --------------------------------
+    
+    /**
+     * @description Controls access to direct message channels.
+     * @path /chat_channels/{channelId}
+     * @allow (read, update) A user who is listed in the 'participantIds' array.
+     * @principle Secures shared chat data using a denormalized list of authorized members.
+     */
+    match /chat_channels/{channelId} {
+      allow read, update, delete: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
+      
+      /**
+       * @description Controls access to messages within a chat channel.
+       * @path /chat_channels/{channelId}/messages/{messageId}
+       * @allow (read, write) Any participant of the channel.
+       * @principle Inherits permissions from the parent channel document.
+       */
+      match /messages/{messageId} {
+        function isParticipant() {
+          return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chat_channels/$(channelId)).data.participantIds;
+        }
+      
+        allow read, list: if isParticipant();
+        allow create: if isParticipant() && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isParticipant() && resource.data.senderId == request.auth.uid;
+      }
+    }
+
 
     // --------------------------------
     // Guru & Training Data
@@ -409,4 +441,3 @@ service cloud.firestore {
     }
   }
 }
-

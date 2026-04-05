@@ -1,13 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Headset, MessageCircle, Music, BookOpen, Wind, Loader2, Star } from 'lucide-react';
 import Link from 'next/link';
 import { crisisCounseling, CrisisCounselingInput, CrisisCounselingOutput } from '@/ai/flows/ai-guru-crisis-counseling';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser, setDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, limit, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 
 
 // Mapping from Hindi UI text to English schema values
@@ -76,6 +78,9 @@ export default function CrisisCounselingPage() {
   const firestore = useFirestore();
   const [relevantGurus, setRelevantGurus] = useState<Guru[] | null>(null);
   const [isGurusLoading, setIsGurusLoading] = useState(false);
+  const { user } = useUser();
+  const router = useRouter();
+  const { toast } = useToast();
 
 
   useEffect(() => {
@@ -125,6 +130,38 @@ export default function CrisisCounselingPage() {
     setAiResponse(null); // Reset AI response
     setRelevantGurus(null); // Reset gurus
     setIsGurusLoading(true); // Start loading gurus
+  };
+
+  const handleTalkToGuru = async (guru: Guru) => {
+    if (!user) {
+        toast({ title: 'बातचीत शुरू करने के लिए कृपया लॉग इन करें।', variant: 'destructive' });
+        router.push('/login');
+        return;
+    }
+    if (user.uid === guru.userId) {
+        toast({ title: 'आप खुद से बात नहीं कर सकते।', variant: 'destructive' });
+        return;
+    }
+
+    const channelId = [user.uid, guru.userId].sort().join('_');
+    const channelRef = doc(firestore, 'chat_channels', channelId);
+    
+    try {
+        const channelSnap = await getDoc(channelRef);
+        if (!channelSnap.exists()) {
+            await setDocumentNonBlocking(channelRef, {
+                id: channelId,
+                participantIds: [user.uid, guru.userId],
+                createdAt: serverTimestamp(),
+                lastUpdatedAt: serverTimestamp(),
+                lastMessage: 'चैट शुरू हो गया है।',
+            }, { merge: true });
+        }
+        router.push(`/chat/${channelId}`);
+    } catch (error) {
+        console.error("Error creating/getting chat channel:", error);
+        toast({ title: 'चैट शुरू करने में विफल।', variant: 'destructive' });
+    }
   };
 
 
@@ -273,7 +310,7 @@ export default function CrisisCounselingPage() {
                                             <Star className="h-5 w-5 fill-current" />
                                             <span className="font-bold">{guru.overallRating || 0}</span>
                                         </div>
-                                        <Button variant="secondary" size="sm" asChild><Link href="/wip">बात करें</Link></Button>
+                                        <Button variant="secondary" size="sm" onClick={() => handleTalkToGuru(guru)}>बात करें</Button>
                                     </div>
                                 </div>
                             ))}
