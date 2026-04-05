@@ -622,6 +622,13 @@
           "type": "number",
           "description": "The number of likes received by this post."
         },
+        "likedBy": {
+          "type": "array",
+          "description": "Array of user IDs who have liked this post.",
+          "items": {
+            "type": "string"
+          }
+        },
         "emotionalReactions": {
           "type": "array",
           "description": "An object detailing various emotional reactions and their counts for the post.",

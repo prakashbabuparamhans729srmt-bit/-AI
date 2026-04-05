@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { hi } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 type Topic = {
     id: string;
@@ -31,6 +32,7 @@ type Post = {
     content: string;
     createdAt: { seconds: number; nanoseconds: number };
     likes: number;
+    likedBy?: string[];
 };
 
 type UserProfile = {
@@ -41,13 +43,18 @@ type UserProfile = {
 };
 
 // Component for a single post
-function PostItem({ post }: { post: Post }) {
+function PostItem({ post, topicId }: { post: Post, topicId: string }) {
     const firestore = useFirestore();
+    const { user } = useUser();
+    const [isLiking, setIsLiking] = useState(false);
+    
     const authorProfileRef = useMemoFirebase(() => {
         if (!post.authorUserId) return null;
         return doc(firestore, 'users', post.authorUserId);
     }, [firestore, post.authorUserId]);
     const { data: author, isLoading: isAuthorLoading } = useDoc<UserProfile>(authorProfileRef);
+
+    const hasLiked = useMemo(() => post.likedBy?.includes(user?.uid || ''), [post.likedBy, user]);
 
     const formatPostDate = (timestamp: { seconds: number; nanoseconds: number }) => {
         if (!timestamp) return '...';
@@ -58,6 +65,40 @@ function PostItem({ post }: { post: Post }) {
             return '...';
         }
     };
+    
+    const handleLikeToggle = async () => {
+        if (!user || !firestore || isLiking) return;
+        setIsLiking(true);
+
+        const postRef = doc(firestore, `forumTopics/${topicId}/posts`, post.id);
+        const currentLikes = post.likes || 0;
+        const currentLikedBy = post.likedBy || [];
+        
+        let newLikedBy;
+        let newLikes;
+
+        if (hasLiked) {
+            // Unlike
+            newLikedBy = currentLikedBy.filter(uid => uid !== user.uid);
+            newLikes = Math.max(0, currentLikes - 1);
+        } else {
+            // Like
+            newLikedBy = [...currentLikedBy, user.uid];
+            newLikes = currentLikes + 1;
+        }
+        
+        try {
+            await updateDocumentNonBlocking(postRef, {
+                likes: newLikes,
+                likedBy: newLikedBy
+            });
+        } catch (error) {
+            console.error("Failed to update like", error);
+        } finally {
+            setIsLiking(false);
+        }
+    };
+
 
     return (
         <div className="flex gap-4">
@@ -76,8 +117,8 @@ function PostItem({ post }: { post: Post }) {
                 </div>
                 <p className="mt-1 whitespace-pre-wrap">{post.content}</p>
                 <div className="flex items-center gap-4 mt-2">
-                    <Button variant="ghost" size="sm" className="flex items-center gap-1">
-                        <ThumbsUp className="h-4 w-4" /> {post.likes || 0}
+                    <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={handleLikeToggle} disabled={!user || isLiking}>
+                        <ThumbsUp className={cn("h-4 w-4", hasLiked && "fill-current text-primary")} /> {post.likes || 0}
                     </Button>
                      <Button variant="ghost" size="sm" className="flex items-center gap-1">
                         <MessageSquare className="h-4 w-4" /> जवाब दें
@@ -131,6 +172,7 @@ export default function TopicPage() {
                 content: values.content,
                 createdAt: serverTimestamp(),
                 likes: 0,
+                likedBy: [],
                 emotionalReactions: [],
                 isBestPostOfTheWeek: false,
             };
@@ -180,7 +222,7 @@ export default function TopicPage() {
                     <Separator />
                     {arePostsLoading && <div className="flex justify-center p-6"><Loader2 className="h-6 w-6 animate-spin" /></div>}
                     <div className="space-y-8">
-                        {posts && posts.map(post => <PostItem key={post.id} post={post} />)}
+                        {posts && posts.map(post => <PostItem key={post.id} post={post} topicId={topicId} />)}
                     </div>
                 </CardContent>
                  <CardFooter>
@@ -223,3 +265,4 @@ export default function TopicPage() {
         </div>
     );
 }
+
