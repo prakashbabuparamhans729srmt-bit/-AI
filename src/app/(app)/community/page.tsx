@@ -1,29 +1,41 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, collectionGroup, where, limit, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Calendar, Plus, Search, ThumbsUp, Mic, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Topic = {
   id: string;
   title: string;
   totalPosts: number;
   totalComments: number;
+  lastPostAt: any; // For orderBy
 };
 type Event = {
   id: string;
   startDate: string;
   title: string;
 };
+type Post = {
+  id: string;
+  content: string;
+  authorUserId: string;
+  likes: number;
+};
+type UserProfile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  profileImageUrl?: string;
+};
 
-const bestPostAuthorAvatar = PlaceHolderImages.find(img => img.id === 'community-best-post-author');
 
 export default function CommunityPage() {
   const firestore = useFirestore();
@@ -40,6 +52,20 @@ export default function CommunityPage() {
     return query(collection(firestore, 'communityEvents'), orderBy('startDate', 'asc'));
   }, [firestore]);
   const { data: events, isLoading: eventsLoading } = useCollection<Event>(eventsQuery);
+
+  const bestPostQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'posts'), where('isBestPostOfTheWeek', '==', true), limit(1));
+  }, [firestore]);
+  const { data: bestPosts, isLoading: bestPostLoading } = useCollection<Post>(bestPostQuery);
+  const bestPost = bestPosts?.[0];
+
+  const authorProfileRef = useMemoFirebase(() => {
+    if (!firestore || !bestPost?.authorUserId) return null;
+    return doc(firestore, 'users', bestPost.authorUserId);
+  }, [firestore, bestPost]);
+  const { data: author, isLoading: authorLoading } = useDoc<UserProfile>(authorProfileRef);
+
 
   const filteredTopics = useMemo(() => {
     if (!topics) return [];
@@ -115,27 +141,52 @@ export default function CommunityPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-accent bg-accent/10">
-        <CardHeader>
-          <CardTitle className="font-headline text-yellow-600">🌟 सप्ताह का सर्वश्रेष्ठ पोस्ट</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-                <Avatar>
-                    {bestPostAuthorAvatar && <AvatarImage src={bestPostAuthorAvatar.imageUrl} />}
-                    <AvatarFallback>रश</AvatarFallback>
-                </Avatar>
-                <p className="font-semibold">रमेश शर्मा, जयपुर</p>
+      {(bestPostLoading || authorLoading) && (
+        <Card className="border-accent bg-accent/10">
+            <CardHeader>
+                <CardTitle className="font-headline text-yellow-600">🌟 सप्ताह का सर्वश्रेष्ठ पोस्ट</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-5 w-32" />
+                </div>
+                <div className="space-y-2 border-l-4 border-accent pl-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5" />
+                    <Skeleton className="h-5 w-24" />
+                </div>
+            </CardContent>
+        </Card>
+      )}
+
+      {!bestPostLoading && !authorLoading && bestPost && author && (
+        <Card className="border-accent bg-accent/10">
+            <CardHeader>
+            <CardTitle className="font-headline text-yellow-600">🌟 सप्ताह का सर्वश्रेष्ठ पोस्ट</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <Avatar>
+                        <AvatarImage src={author.profileImageUrl || `https://picsum.photos/seed/${author.id}/100/100`} />
+                        <AvatarFallback>{author.firstName?.charAt(0) || 'U'}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-semibold">{author.firstName} {author.lastName}</p>
+                </div>
+            <blockquote className="italic border-l-4 border-accent pl-4">
+                {bestPost.content}
+            </blockquote>
+            <div className="flex items-center gap-2 text-primary">
+                <ThumbsUp className="h-5 w-5" />
+                <span className="font-medium">{bestPost.likes || 0} लोगों ने पसंद किया</span>
             </div>
-          <blockquote className="italic border-l-4 border-accent pl-4">
-          "मैंने AI गुरु से पूछा कि मेरे बेटे को नशे की लत से कैसे छुड़ाऊं। उसने न केवल धार्मिक दृष्टिकोण से समझाया, बल्कि वैज्ञानिक तरीके भी बताए और नजदीकी पुनर्वास केंद्र के बारे में भी बताया। आज मेरा बेटा ठीक है। धन्यवाद कुलगुरु!"
-          </blockquote>
-          <div className="flex items-center gap-2 text-primary">
-            <ThumbsUp className="h-5 w-5" />
-            <span className="font-medium">245 लोगों ने भावुक किया</span>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader>
