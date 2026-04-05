@@ -5,15 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight, Calendar, MessageSquare, BookOpen, HeartPulse, Sparkles, Hand, Users, Send, Loader2 } from 'lucide-react';
+import { ArrowRight, MessageSquare, BookOpen, HeartPulse, Sparkles, Hand, Users, Send, Loader2, Target } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { aiGuruGuidance } from '@/ai/flows/ai-guru-guidance';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, getDoc, doc, where, limit } from 'firebase/firestore';
 import { personalizedDailyWisdom, type PersonalizedDailyWisdomOutput } from '@/ai/flows/personalized-daily-wisdom';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -33,6 +32,13 @@ type Message = {
   content: string;
   timestamp?: any;
 };
+
+type Goal = {
+  id: string;
+  description: string;
+  status: 'Active' | 'Completed';
+};
+
 
 type UserProfile = {
   id: string;
@@ -73,6 +79,31 @@ export default function DashboardPage() {
     return doc(firestore, 'families', userProfile.familyId);
   }, [firestore, userProfile]);
   const { data: family } = useDoc<any>(familyRef);
+
+  // Query for active goals to display in the schedule
+  const activeGoalsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(
+        collection(firestore, `users/${user.uid}/goals`), 
+        where('status', '==', 'Active'), 
+        limit(3)
+    );
+  }, [firestore, user]);
+  const { data: activeGoals, isLoading: areGoalsLoading } = useCollection<Goal>(activeGoalsQuery);
+
+  // Query for all goals to calculate progress
+  const allGoalsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, `users/${user.uid}/goals`));
+  }, [firestore, user]);
+  const { data: allGoals, isLoading: areAllGoalsLoading } = useCollection<Goal>(allGoalsQuery);
+
+  // Calculate goals progress
+  const goalsProgress = useMemo(() => {
+    if (!allGoals || allGoals.length === 0) return 0;
+    const completedGoals = allGoals.filter(goal => goal.status === 'Completed').length;
+    return Math.round((completedGoals / allGoals.length) * 100);
+  }, [allGoals]);
 
 
   useEffect(() => {
@@ -327,21 +358,31 @@ export default function DashboardPage() {
           {/* Today's Schedule */}
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-2xl">📅 आज के कार्यक्रम</CardTitle>
+              <CardTitle className="font-headline text-2xl">🎯 सक्रिय लक्ष्य</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start gap-4">
-                <Calendar className="h-5 w-5 text-primary mt-1" />
-                <div>
-                  <p>शाम 6:00 बजे - परिवार ध्यान (सभी सदस्य)</p>
-                  <p>रात 8:30 बजे - आर्यन के साथ करियर चर्चा</p>
+              {areGoalsLoading ? (
+                <div className="flex justify-center items-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              </div>
+              ) : activeGoals && activeGoals.length > 0 ? (
+                activeGoals.map(goal => (
+                  <div key={goal.id} className="flex items-start gap-4">
+                    <Target className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                    <p>{goal.description}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-start gap-4 text-muted-foreground">
+                   <Target className="h-5 w-5 mt-1 flex-shrink-0" />
+                   <p>आपके कोई सक्रिय लक्ष्य नहीं हैं। <Link href="/profile" className="text-primary underline">प्रोफ़ाइल पेज</Link> पर जाकर कुछ लक्ष्य निर्धारित करें!</p>
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="ghost" asChild><Link href="/wip">याद दिलाएं</Link></Button>
+              <Button variant="ghost" asChild><Link href="/profile">लक्ष्य प्रबंधित करें</Link></Button>
               <Button variant="link" asChild>
-                <Link href="/wip">
+                <Link href="/profile">
                   सभी देखें <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -351,19 +392,23 @@ export default function DashboardPage() {
            {/* Family Progress Tracker */}
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-2xl">📊 परिवार प्रगति ट्रैकर</CardTitle>
+              <CardTitle className="font-headline text-2xl">📊 प्रगति ट्रैकर</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+               <div>
+                <Label>लक्ष्य पूर्ति: {areAllGoalsLoading ? '...' : `${goalsProgress}%`}</Label>
+                {areAllGoalsLoading ? (
+                  <Skeleton className="h-2 w-full" />
+                ) : (
+                  <Progress value={goalsProgress} className="h-2" />
+                )}
+              </div>
               <div>
-                <Label>साप्ताहिक ध्यान: 70%</Label>
+                <Label>साप्ताहिक ध्यान: 70% (उदाहरण)</Label>
                 <Progress value={70} className="h-2" />
               </div>
               <div>
-                <Label>संस्कार पालन: 60%</Label>
-                <Progress value={60} className="h-2" />
-              </div>
-              <div>
-                <Label>परिवार संवाद: 80%</Label>
+                <Label>परिवार संवाद: 80% (उदाहरण)</Label>
                 <Progress value={80} className="h-2" />
               </div>
             </CardContent>
