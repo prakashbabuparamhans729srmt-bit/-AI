@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { User, Loader2 } from 'lucide-react';
-import { useAuth, useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { useAuth, useUser, useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
@@ -17,7 +17,7 @@ import {
   signInAnonymously,
   AuthError,
 } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
@@ -63,25 +63,49 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, provider);
       const googleUser = result.user;
 
-      // Create/merge user profile in Firestore
       const userDocRef = doc(firestore, 'users', googleUser.uid);
-      const displayName = googleUser.displayName || '';
-      const [firstName, ...lastNameParts] = displayName.split(' ');
-      const lastName = lastNameParts.join(' ');
+      const userDocSnap = await getDoc(userDocRef);
 
-      const userProfile = {
-        id: googleUser.uid,
-        familyId: null, // User can create/join a family later
-        firstName: firstName || 'उपयोगकर्ता',
-        lastName: lastName || '',
-        dateOfBirth: '', // Placeholder
-        gender: '', // Placeholder
-        email: googleUser.email,
-        profileImageUrl: googleUser.photoURL || `https://picsum.photos/seed/${googleUser.uid}/200/200`
-      };
-      
-      // Use non-blocking set to create/merge the profile document
-      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+      // If user is new (document doesn't exist), create profile and a default family.
+      if (!userDocSnap.exists()) {
+        const displayName = googleUser.displayName || '';
+        const [firstName, ...lastNameParts] = displayName.split(' ');
+        const lastName = lastNameParts.join(' ');
+        const familyBaseName = lastName || firstName || 'परिवार';
+        
+        // 1. Create a new family for the new user
+        const familiesColRef = collection(firestore, 'families');
+        const familyData = {
+            familyName: `${familyBaseName} परिवार`,
+            headOfFamilyUserId: googleUser.uid,
+            memberUserIds: [googleUser.uid],
+            registrationDate: serverTimestamp(),
+        };
+
+        const familyDocRef = await addDocumentNonBlocking(familiesColRef, familyData);
+        if (!familyDocRef) {
+            throw new Error("Family document could not be created.");
+        }
+        const familyId = familyDocRef.id;
+        
+        // Also update the family document with its own ID
+        await updateDocumentNonBlocking(doc(firestore, 'families', familyId), { id: familyId });
+        
+        // 2. Create the user profile and link it to the new family
+        const userProfile = {
+            id: googleUser.uid,
+            familyId: familyId,
+            firstName: firstName || 'उपयोगकर्ता',
+            lastName: lastName || '',
+            dateOfBirth: '', // Placeholder, user can update in profile
+            gender: '', // Placeholder, user can update in profile
+            email: googleUser.email,
+            profileImageUrl: googleUser.photoURL || `https://picsum.photos/seed/${googleUser.uid}/200/200`
+        };
+        
+        // Use non-blocking set to create/merge the profile document
+        await setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+      }
 
       router.push('/dashboard');
     } catch (error) {
