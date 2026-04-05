@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, orderBy, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -140,7 +140,7 @@ export default function TopicPage() {
             await updateDocumentNonBlocking(doc(firestore, `forumTopics/${topicId}/posts`, postDocRef.id), { id: postDocRef.id });
 
             // Update topic's lastPostAt and totalPosts
-            await updateDoc(topicRef!, {
+            await updateDocumentNonBlocking(topicRef!, {
                 lastPostAt: serverTimestamp(),
                 totalPosts: (posts?.length || 0) + 1
             });

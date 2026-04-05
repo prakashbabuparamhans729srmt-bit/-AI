@@ -12,8 +12,8 @@ import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { aiGuruGuidance } from '@/ai/flows/ai-guru-guidance';
-import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, addDoc, getDoc, doc } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, getDoc, doc } from 'firebase/firestore';
 import { personalizedDailyWisdom, type PersonalizedDailyWisdomOutput } from '@/ai/flows/personalized-daily-wisdom';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -161,15 +161,8 @@ export default function DashboardPage() {
       conversationId: 'dashboard-chat',
     };
 
-    // Non-blocking write for user message
-    addDoc(messagesRef, userMessageData).catch(err => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: messagesRef.path,
-            operation: 'create',
-            requestResourceData: userMessageData
-        }));
-        console.error("Error saving user message:", err);
-    });
+    // Non-blocking write for user message. UI updates via onSnapshot listener.
+    addDocumentNonBlocking(messagesRef, userMessageData);
 
     try {
       const response = await aiGuruGuidance({ 
@@ -184,15 +177,8 @@ export default function DashboardPage() {
         conversationId: 'dashboard-chat',
       };
 
-      // Non-blocking write for AI message
-      addDoc(messagesRef, aiMessageData).catch(err => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: messagesRef.path,
-              operation: 'create',
-              requestResourceData: aiMessageData
-          }));
-          console.error("Error saving AI message:", err);
-      });
+      // Non-blocking write for AI message.
+      addDocumentNonBlocking(messagesRef, aiMessageData);
       
     } catch (error) {
       console.error("Error with AI guidance:", error);
@@ -202,7 +188,8 @@ export default function DashboardPage() {
         timestamp: serverTimestamp(),
         conversationId: 'dashboard-chat',
       };
-      addDoc(messagesRef, errorMessageData); // Also save error message to chat
+      // Non-blocking write for error message.
+      addDocumentNonBlocking(messagesRef, errorMessageData);
     } finally {
       setIsLoading(false);
     }
