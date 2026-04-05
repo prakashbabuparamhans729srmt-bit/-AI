@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { collection, doc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, orderBy, limit, where } from 'firebase/firestore';
 import { CheckCircle, Edit, Target, Plus, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
@@ -37,20 +37,12 @@ type Message = {
   content: string;
 };
 
-const personalizedContent = [
-    {
-        category: '🔬 विज्ञान और धर्म',
-        items: ['बिग बैंग और सृष्टि - वैज्ञानिक और धार्मिक दृष्टि', 'क्वांटम भौतिकी और अद्वैत वेदांत में समानताएं']
-    },
-    {
-        category: '🧠 किशोर मनोविज्ञान',
-        items: ['गुस्से पर काबू कैसे पाएं? (धार्मिक दृष्टिकोण)', 'माता-पिता से संवाद कैसे करें?']
-    },
-    {
-        category: '🎓 करियर मार्गदर्शन',
-        items: ['वैज्ञानिक बनने के लिए ध्यान क्यों जरूरी है?', 'नैतिकता और वैज्ञानिक शोध']
-    }
-];
+type Article = {
+  id: string;
+  title: string;
+  category: string;
+};
+
 
 export default function ProfilePage() {
     const { user, isUserLoading } = useUser();
@@ -63,6 +55,30 @@ export default function ProfilePage() {
         return doc(firestore, 'users', user.uid);
     }, [firestore, user]);
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+    // Query for personalized articles based on user's interests
+    const articlesQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile?.generalInterests || userProfile.generalInterests.length === 0) {
+            return null;
+        }
+        return query(
+            collection(firestore, 'knowledgeArticles'), 
+            where('topicTags', 'array-contains-any', userProfile.generalInterests.slice(0, 10)),
+            limit(6)
+        );
+    }, [firestore, userProfile]);
+    const { data: personalizedArticles, isLoading: arePersonalizedArticlesLoading } = useCollection<Article>(articlesQuery);
+
+    // Group fetched articles by category
+    const groupedArticles = useMemo(() => {
+        if (!personalizedArticles) return {};
+        return personalizedArticles.reduce((acc, article) => {
+            const category = article.category || 'अन्य';
+            (acc[category] = acc[category] || []).push(article);
+            return acc;
+        }, {} as Record<string, Article[]>);
+    }, [personalizedArticles]);
+
 
     const goalsQuery = useMemoFirebase(() => {
         if (!user) return null;
@@ -186,16 +202,30 @@ export default function ProfilePage() {
           <CardTitle className="font-headline text-2xl">📊 आपके लिए वैयक्तिकृत सामग्री</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-            {personalizedContent.map(content => (
-                <div key={content.category}>
-                    <h3 className="font-semibold text-lg">{content.category}</h3>
-                    <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
-                        {content.items.map(item => <li key={item}>{item}</li>)}
-                    </ul>
-                    <Button variant="link" className="p-0 h-auto" asChild><Link href="/wip">और पढ़ें</Link></Button>
-                    <Separator className="mt-4"/>
-                </div>
-            ))}
+            {(isProfileLoading || arePersonalizedArticlesLoading) ? (
+               <div className="space-y-4">
+                  <div className="space-y-2"><Skeleton className="h-6 w-1/3" /><Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-2/3" /></div>
+                  <Separator/>
+                  <div className="space-y-2"><Skeleton className="h-6 w-1/3" /><Skeleton className="h-4 w-3/4" /></div>
+               </div>
+            ) : Object.keys(groupedArticles).length > 0 ? (
+                Object.entries(groupedArticles).map(([category, articlesInCategory]) => (
+                    <div key={category}>
+                        <h3 className="font-semibold text-lg">{category}</h3>
+                        <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
+                            {articlesInCategory.map(article => (
+                                <li key={article.id}>
+                                    <Link href={'/wip'} className="hover:underline hover:text-primary transition-colors">{article.title}</Link>
+                                </li>
+                            ))}
+                        </ul>
+                        <Button variant="link" className="p-0 h-auto" asChild><Link href="/knowledge-hub">और पढ़ें</Link></Button>
+                        <Separator className="mt-4"/>
+                    </div>
+                ))
+            ) : (
+                <p className="text-muted-foreground text-center p-4">आपकी रुचियों के आधार पर कोई सामग्री नहीं मिली। अपनी प्रोफ़ाइल में और रुचियां जोड़ने का प्रयास करें।</p>
+            )}
         </CardContent>
       </Card>
 
