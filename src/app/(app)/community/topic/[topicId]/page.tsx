@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, orderBy, serverTimestamp } from 'firebase/firestore';
@@ -43,7 +43,7 @@ type UserProfile = {
 };
 
 // Component for a single post
-function PostItem({ post, topicId }: { post: Post, topicId: string }) {
+function PostItem({ post, topicId, onReplyClick }: { post: Post, topicId: string, onReplyClick: () => void }) {
     const firestore = useFirestore();
     const { user } = useUser();
     const [isLiking, setIsLiking] = useState(false);
@@ -120,7 +120,7 @@ function PostItem({ post, topicId }: { post: Post, topicId: string }) {
                     <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={handleLikeToggle} disabled={!user || isLiking}>
                         <ThumbsUp className={cn("h-4 w-4", hasLiked && "fill-current text-primary")} /> {post.likes || 0}
                     </Button>
-                     <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                     <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={onReplyClick}>
                         <MessageSquare className="h-4 w-4" /> जवाब दें
                     </Button>
                 </div>
@@ -140,6 +140,11 @@ export default function TopicPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+    const handleFocusReply = () => {
+        replyTextareaRef.current?.focus();
+    };
 
     const topicRef = useMemoFirebase(() => {
         if (!firestore || !topicId) return null;
@@ -222,7 +227,7 @@ export default function TopicPage() {
                     <Separator />
                     {arePostsLoading && <div className="flex justify-center p-6"><Loader2 className="h-6 w-6 animate-spin" /></div>}
                     <div className="space-y-8">
-                        {posts && posts.map(post => <PostItem key={post.id} post={post} topicId={topicId} />)}
+                        {posts && posts.map(post => <PostItem key={post.id} post={post} topicId={topicId} onReplyClick={handleFocusReply} />)}
                     </div>
                 </CardContent>
                  <CardFooter>
@@ -237,6 +242,10 @@ export default function TopicPage() {
                                             <FormLabel className="text-lg font-semibold">अपना जवाब दें</FormLabel>
                                             <FormControl>
                                                 <Textarea
+                                                    ref={(e) => {
+                                                        field.ref(e);
+                                                        replyTextareaRef.current = e;
+                                                    }}
                                                     placeholder="इस चर्चा में शामिल हों..."
                                                     className="min-h-[120px]"
                                                     {...field}
@@ -265,4 +274,3 @@ export default function TopicPage() {
         </div>
     );
 }
-
