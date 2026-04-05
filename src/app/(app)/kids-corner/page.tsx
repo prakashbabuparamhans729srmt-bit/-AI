@@ -4,20 +4,26 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Puzzle, Paintbrush, Music, HelpCircle, Book, Drama, Loader2 } from 'lucide-react';
+import { Puzzle, Paintbrush, Music, HelpCircle, Book, Drama, Loader2, Heart, Brain, Wind } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { useMemo } from 'react';
 
-const activities = [
-  { icon: <Puzzle />, label: 'नैतिकता पहेली', href: '/wip' },
-  { icon: <Paintbrush />, label: 'धार्मिक रंग भरना', href: '/wip' },
-  { icon: <Music />, label: 'भजन और कव्वाली', href: '/wip' },
-  { icon: <HelpCircle />, label: 'प्रश्नोत्तरी', href: '/wip' },
-  { icon: <Book />, label: 'आज का मंत्र/दुआ', href: '/wip' },
-  { icon: <Drama />, label: 'कठपुतली शो', href: '/wip' },
-];
+// Map activity types from Firestore to Lucide icons
+const activityIcons: { [key: string]: React.ReactNode } = {
+  'Puzzle': <Puzzle />,
+  'Coloring': <Paintbrush />,
+  'Chanting': <Music />,
+  'Quiz': <HelpCircle />,
+  'Reading': <Book />,
+  'Storytelling': <Drama />,
+  'Meditation': <Heart />,
+  'Yoga': <Wind />,
+  'Learning': <Brain />,
+};
+
+const defaultIcon = <Puzzle />;
 
 type Story = {
   id: string;
@@ -25,6 +31,12 @@ type Story = {
   ageGroup: string;
   content: string;
   moralLesson: string;
+};
+
+type Activity = {
+    id: string;
+    name: string;
+    type: string; // e.g., 'Puzzle', 'Coloring'
 };
 
 const storyImage = PlaceHolderImages.find((img) => img.id === 'kids-story');
@@ -38,6 +50,15 @@ export default function KidsCornerPage() {
   }, [firestore]);
 
   const { data: stories, isLoading: storiesLoading } = useCollection<Story>(storiesQuery);
+
+  const activitiesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+        collection(firestore, 'activities'), 
+        where('targetAgeGroup', 'in', ['Children', 'All'])
+    );
+  }, [firestore]);
+  const { data: activities, isLoading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
 
   const groupedStories = useMemo(() => {
     if (!stories) return {};
@@ -82,14 +103,22 @@ export default function KidsCornerPage() {
           <CardTitle className="font-headline text-2xl">🎮 खेल और गतिविधियाँ</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {activities.map((activity, index) => (
-            <Link href={activity.href} key={index}>
+          {activitiesLoading && Array.from({ length: 6 }).map((_, index) => (
+             <Card key={index} className="flex flex-col items-center justify-center p-4 text-center h-32">
+                <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+             </Card>
+          ))}
+          {!activitiesLoading && activities?.map((activity) => (
+            <Link href={'/wip'} key={activity.id}>
             <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-accent/50 hover:shadow-lg transition-all cursor-pointer h-32">
-              <div className="text-primary mb-2 text-4xl">{activity.icon}</div>
-              <p className="font-semibold text-sm md:text-base">{activity.label}</p>
+              <div className="text-primary mb-2 text-4xl">{activityIcons[activity.type] || defaultIcon}</div>
+              <p className="font-semibold text-sm md:text-base">{activity.name}</p>
             </Card>
             </Link>
           ))}
+           {!activitiesLoading && activities?.length === 0 && (
+                <p className="col-span-full text-center text-muted-foreground p-4">अभी कोई गतिविधि उपलब्ध नहीं है।</p>
+           )}
         </CardContent>
       </Card>
       
@@ -148,7 +177,7 @@ export default function KidsCornerPage() {
             <li>प्रश्न पूछने दें</li>
             <li>उदाहरण देकर समझाएं</li>
           </ul>
-          <Button variant="link" className="mt-2 p-0" asChild><Link href="/wip">और सुझाव पढ़ें</Link></Button>
+          <Button variant="link" className="p-0 h-auto" asChild><Link href="/wip">और सुझाव पढ़ें</Link></Button>
         </CardContent>
       </Card>
     </div>
