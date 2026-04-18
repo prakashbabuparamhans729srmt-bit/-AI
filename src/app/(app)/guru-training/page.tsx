@@ -1,15 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { Search, Star, Calendar, FileText, Loader2 } from 'lucide-react';
+import { Search, Star, Calendar, FileText, Loader2, GraduationCap } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc, setDocumentNonBlocking } from '@/firebase';
+import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 // Types based on backend.json
 type TrainingCourse = {
@@ -35,6 +37,7 @@ type Guru = {
     profileImageUrl?: string;
     firstName: string;
     lastName: string;
+    specializations: string[];
 };
 
 type CommunityEvent = {
@@ -46,6 +49,25 @@ type CommunityEvent = {
 
 export default function GuruTrainingPage() {
     const firestore = useFirestore();
+    const { user, isUserLoading } = useUser();
+    const { toast } = useToast();
+    const router = useRouter();
+    const [isJoining, setIsJoining] = useState(false);
+
+    // Fetch user's main profile to get name, etc.
+    const userProfileRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: userProfile, isLoading: isUserProfileLoading } = useDoc<any>(userProfileRef);
+
+    // Fetch guru profile
+    const guruProfileRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'gurus', user.uid);
+    }, [firestore, user]);
+    const { data: guruProfile, isLoading: isGuruProfileLoading } = useDoc<Guru>(guruProfileRef);
+
 
     // Fetch the main training course (assuming one for now)
     const coursesQuery = useMemoFirebase(() => {
@@ -75,6 +97,37 @@ export default function GuruTrainingPage() {
     }, [firestore]);
     const { data: workshops, isLoading: workshopsLoading } = useCollection<CommunityEvent>(workshopsQuery);
 
+    const handleJoinTraining = async () => {
+        if (!user || !userProfile || !guruProfileRef) {
+            toast({ variant: 'destructive', title: 'त्रुटि', description: 'कृपया पुन: प्रयास करें।' });
+            return;
+        }
+        setIsJoining(true);
+        try {
+            const newGuruData = {
+                id: user.uid,
+                userId: user.uid,
+                firstName: userProfile.firstName || 'अनाम',
+                lastName: userProfile.lastName || '',
+                profileImageUrl: userProfile.profileImageUrl || `https://picsum.photos/seed/${user.uid}/100/100`,
+                city: '',
+                specializations: ['प्रशिक्षण में'],
+                languageSkills: ['हिंदी'],
+                isApproved: false,
+                overallRating: 0,
+                familiesManagedCount: 0,
+                certifiedCourseModuleIds: []
+            };
+            await setDocumentNonBlocking(guruProfileRef, newGuruData, { merge: true });
+            toast({ title: 'बधाई हो!', description: 'आप गुरु प्रशिक्षण कार्यक्रम में शामिल हो गए हैं।' });
+        } catch (error) {
+            console.error('Failed to create guru profile:', error);
+            toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'कार्यक्रम में शामिल होने में विफल। कृपया पुन: प्रयास करें।' });
+        } finally {
+            setIsJoining(false);
+        }
+    };
+
     const formatEventDate = (isoDate: string) => {
         if (!isoDate) return '';
         try {
@@ -88,18 +141,57 @@ export default function GuruTrainingPage() {
     
     const curriculumLoading = coursesLoading || modulesLoading;
 
+    if (isUserLoading || isGuruProfileLoading || isUserProfileLoading) {
+        return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    }
+
+    if (!user) {
+        return (
+            <div className="text-center p-10">
+                <Card className="max-w-md mx-auto">
+                    <CardHeader>
+                        <CardTitle>लॉग इन आवश्यक है</CardTitle>
+                        <CardDescription>गुरु प्रशिक्षण कार्यक्रम देखने के लिए कृपया लॉग इन करें।</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="mt-4"><Link href="/login">लॉग इन</Link></Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!guruProfile) {
+        return (
+            <Card className="text-center max-w-2xl mx-auto">
+                <CardHeader>
+                    <CardTitle className="font-headline text-3xl">गुरु बनने की अपनी यात्रा शुरू करें</CardTitle>
+                    <CardDescription className="text-lg mt-2">
+                       हमारे प्रशिक्षण कार्यक्रम में शामिल हों और सैकड़ों परिवारों को मार्गदर्शन देने की क्षमता हासिल करें।
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button size="lg" onClick={handleJoinTraining} disabled={isJoining}>
+                        {isJoining ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <GraduationCap className="mr-2 h-5 w-5" />}
+                        प्रशिक्षण कार्यक्रम में शामिल हों
+                    </Button>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <div className="space-y-8">
             <Card className="text-center bg-gradient-to-br from-secondary/80 to-secondary/60 text-secondary-foreground">
                 <CardHeader>
-                    <CardTitle className="font-headline text-4xl">🧘 क्या आप बनना चाहते हैं कुलगुरु?</CardTitle>
+                    <CardTitle className="font-headline text-4xl">🧘 आप एक प्रशिक्षु कुलगुरु हैं</CardTitle>
                     <CardDescription className="text-secondary-foreground/80 text-lg">
                         "एक गुरु सैकड़ों परिवारों को दिशा दे सकता है"
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center gap-4">
-                    <Button variant="default" size="lg" className="bg-white text-secondary hover:bg-gray-100" asChild><Link href="/wip">आवेदन करें</Link></Button>
-                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10" asChild><Link href="/wip">जानकारी लें</Link></Button>
+                    <Button variant="default" size="lg" className="bg-white text-secondary hover:bg-gray-100" asChild><Link href="/wip">मेरा डैशबोर्ड</Link></Button>
+                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10" asChild><Link href="/wip">सहायता</Link></Button>
                 </CardContent>
             </Card>
 
