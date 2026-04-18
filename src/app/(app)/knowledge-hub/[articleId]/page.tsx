@@ -24,6 +24,24 @@ type Article = {
 
 const articleHeroImage = PlaceHolderImages.find((img) => img.id === 'article-hero');
 
+// Helper function to convert YouTube URL to embed URL
+const getYouTubeEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname.includes('youtube.com') && urlObj.searchParams.has('v')) {
+            return `https://www.youtube.com/embed/${urlObj.searchParams.get('v')}`;
+        }
+        if (urlObj.hostname.includes('youtu.be')) {
+            return `https://www.youtube.com/embed/${urlObj.pathname.slice(1)}`;
+        }
+    } catch (e) {
+        // Not a valid URL
+    }
+    return null; // Return null if not a valid YouTube URL
+};
+
+
 export default function ArticleDetailPage() {
   const { articleId } = useParams() as { articleId: string };
   const firestore = useFirestore();
@@ -45,6 +63,9 @@ export default function ArticleDetailPage() {
       return '';
     }
   };
+  
+  const isVideoArticle = article?.category === 'विद्वानों के विचार' && article.mediaUrls?.[0];
+  const videoEmbedUrl = isVideoArticle ? getYouTubeEmbedUrl(article.mediaUrls![0]) : null;
 
   if (isLoading) {
     return (
@@ -75,26 +96,52 @@ export default function ArticleDetailPage() {
         </Button>
 
       <Card className="overflow-hidden">
-        {articleHeroImage && (
-          <div className="relative h-72 w-full">
-            <Image
-              src={article.mediaUrls?.[0] || articleHeroImage.imageUrl}
-              alt={article.title}
-              fill
-              className="object-cover"
-              data-ai-hint={articleHeroImage.imageHint}
-            />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          </div>
+        {videoEmbedUrl ? (
+          <>
+            <div className="aspect-video w-full bg-black">
+                <iframe
+                    className="h-full w-full"
+                    src={videoEmbedUrl}
+                    title={article.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                ></iframe>
+            </div>
+            <CardHeader>
+                {article.category && <p className="font-semibold text-primary">{article.category}</p>}
+                <CardTitle className="font-headline text-4xl">{article.title}</CardTitle>
+                <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 text-lg">
+                    {article.author && <span className="flex items-center gap-2"><User className="h-4 w-4" /> {article.author}</span>}
+                    {article.publicationDate && <span className="flex items-center gap-2"><Calendar className="h-4 w-4" /> {formatArticleDate(article.publicationDate)}</span>}
+                </CardDescription>
+            </CardHeader>
+          </>
+        ) : (
+          <>
+            {articleHeroImage && (
+                <div className="relative h-72 w-full">
+                    <Image
+                    src={article.mediaUrls?.[0] || articleHeroImage.imageUrl}
+                    alt={article.title}
+                    fill
+                    className="object-cover"
+                    data-ai-hint={articleHeroImage.imageHint}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                </div>
+            )}
+            <CardHeader className="relative -mt-20 z-10 text-white">
+                {article.category && <p className="font-semibold text-primary-foreground/80">{article.category}</p>}
+                <CardTitle className="font-headline text-4xl text-white">{article.title}</CardTitle>
+                <CardDescription className="text-lg text-primary-foreground/90 flex flex-wrap items-center gap-x-4 gap-y-1 pt-2">
+                    {article.author && <span className="flex items-center gap-2"><User className="h-4 w-4" /> {article.author}</span>}
+                    {article.publicationDate && <span className="flex items-center gap-2"><Calendar className="h-4 w-4" /> {formatArticleDate(article.publicationDate)}</span>}
+                </CardDescription>
+            </CardHeader>
+          </>
         )}
-        <CardHeader className="relative -mt-20 z-10 text-white">
-          {article.category && <p className="font-semibold text-primary-foreground/80">{article.category}</p>}
-          <CardTitle className="font-headline text-4xl text-white">{article.title}</CardTitle>
-          <CardDescription className="text-lg text-primary-foreground/90 flex flex-wrap items-center gap-x-4 gap-y-1 pt-2">
-            {article.author && <span className="flex items-center gap-2"><User className="h-4 w-4" /> {article.author}</span>}
-            {article.publicationDate && <span className="flex items-center gap-2"><Calendar className="h-4 w-4" /> {formatArticleDate(article.publicationDate)}</span>}
-          </CardDescription>
-        </CardHeader>
+
         <CardContent className="pt-6">
           <div className="prose prose-lg dark:prose-invert max-w-none text-xl leading-relaxed whitespace-pre-wrap">
             {article.fullContent}

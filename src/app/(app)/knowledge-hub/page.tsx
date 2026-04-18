@@ -233,7 +233,7 @@ export default function KnowledgeHubPage() {
               {!videosLoading && expertVideos && expertVideos.length > 0 && expertVideos.map(video => (
                   <div key={video.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <p>वीडियो: "{video.title}" - <span className="font-semibold">{video.author}</span></p>
-                      <Button variant="secondary" asChild><Link href="/wip">देखें</Link></Button>
+                      <Button variant="secondary" asChild><Link href={`/knowledge-hub/${video.id}`}>देखें</Link></Button>
                   </div>
               ))}
               {!videosLoading && (!expertVideos || expertVideos.length === 0) && (
