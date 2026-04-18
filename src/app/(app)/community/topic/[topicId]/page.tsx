@@ -2,12 +2,12 @@
 import { useMemo, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, orderBy, serverTimestamp, increment } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ThumbsUp, MessageSquare, CornerUpLeft } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, CornerUpLeft, Send } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { hi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 type Topic = {
     id: string;
@@ -24,6 +25,7 @@ type Topic = {
     description: string;
     creatorUserId: string;
     createdAt: { seconds: number; nanoseconds: number };
+    totalComments?: number;
 };
 
 type Post = {
@@ -42,17 +44,71 @@ type UserProfile = {
     profileImageUrl: string;
 };
 
+type ForumComment = {
+    id: string;
+    authorUserId: string;
+    content: string;
+    createdAt: { seconds: number; nanoseconds: number };
+};
+
+// Component for a single comment
+function CommentItem({ comment }: { comment: ForumComment }) {
+    const firestore = useFirestore();
+    const { data: author, isLoading: isAuthorLoading } = useDoc<UserProfile>(
+        useMemoFirebase(() => comment.authorUserId ? doc(firestore, 'users', comment.authorUserId) : null, [firestore, comment.authorUserId])
+    );
+
+    const formatCommentDate = (timestamp: { seconds: number; nanoseconds: number }) => {
+        if (!timestamp) return '...';
+        try {
+            return formatDistanceToNow(new Date(timestamp.seconds * 1000), { addSuffix: true, locale: hi });
+        } catch {
+            return '...';
+        }
+    };
+
+    return (
+        <div className="flex gap-3">
+            <Avatar className="h-8 w-8 flex-shrink-0">
+                {isAuthorLoading ? <Loader2 className="h-full w-full animate-spin" /> : (
+                    <>
+                        <AvatarImage src={author?.profileImageUrl || `https://picsum.photos/seed/${comment.authorUserId}/100/100`} />
+                        <AvatarFallback>{author?.firstName?.charAt(0) || 'U'}</AvatarFallback>
+                    </>
+                )}
+            </Avatar>
+            <div className="flex-grow bg-muted/50 rounded-md px-3 py-2">
+                <div className="flex items-center gap-2">
+                    <p className="font-semibold text-sm">{isAuthorLoading ? '...' : `${author?.firstName || 'अनाम'} ${author?.lastName || ''}`}</p>
+                    <p className="text-xs text-muted-foreground">{formatCommentDate(comment.createdAt)}</p>
+                </div>
+                <p className="text-sm mt-1 whitespace-pre-wrap">{comment.content}</p>
+            </div>
+        </div>
+    );
+}
+
 // Component for a single post
-function PostItem({ post, topicId, onReplyClick }: { post: Post, topicId: string, onReplyClick: () => void }) {
+function PostItem({ post, topicId, topic }: { post: Post, topicId: string, topic: Topic }) {
     const firestore = useFirestore();
     const { user } = useUser();
+    const { toast } = useToast();
     const [isLiking, setIsLiking] = useState(false);
+    const [showComments, setShowComments] = useState(false);
+    const [commentText, setCommentText] = useState('');
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     
     const authorProfileRef = useMemoFirebase(() => {
         if (!post.authorUserId) return null;
         return doc(firestore, 'users', post.authorUserId);
     }, [firestore, post.authorUserId]);
     const { data: author, isLoading: isAuthorLoading } = useDoc<UserProfile>(authorProfileRef);
+
+    const commentsQuery = useMemoFirebase(() => {
+        if (!firestore || !topicId || !post.id) return null;
+        return query(collection(firestore, `forumTopics/${topicId}/posts/${post.id}/comments`), orderBy('createdAt', 'asc'));
+    }, [firestore, topicId, post.id]);
+    const { data: comments, isLoading: areCommentsLoading } = useCollection<ForumComment>(commentsQuery);
 
     const hasLiked = useMemo(() => post.likedBy?.includes(user?.uid || ''), [post.likedBy, user]);
 
@@ -71,38 +127,65 @@ function PostItem({ post, topicId, onReplyClick }: { post: Post, topicId: string
         setIsLiking(true);
 
         const postRef = doc(firestore, `forumTopics/${topicId}/posts`, post.id);
-        const currentLikes = post.likes || 0;
         const currentLikedBy = post.likedBy || [];
         
         let newLikedBy;
-        let newLikes;
-
         if (hasLiked) {
-            // Unlike
             newLikedBy = currentLikedBy.filter(uid => uid !== user.uid);
-            newLikes = Math.max(0, currentLikes - 1);
         } else {
-            // Like
             newLikedBy = [...currentLikedBy, user.uid];
-            newLikes = currentLikes + 1;
         }
         
         try {
             await updateDocumentNonBlocking(postRef, {
-                likes: newLikes,
+                likes: newLikedBy.length,
                 likedBy: newLikedBy
             });
         } catch (error) {
             console.error("Failed to update like", error);
+            toast({ variant: "destructive", title: "एक त्रुटि हुई", description: "पोस्ट पसंद करने में विफल।" });
         } finally {
             setIsLiking(false);
         }
     };
 
+    const handleCommentSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!commentText.trim() || !user || !firestore) return;
+        setIsSubmittingComment(true);
+
+        try {
+            const commentsColRef = collection(firestore, `forumTopics/${topicId}/posts/${post.id}/comments`);
+            const commentData = {
+                forumPostId: post.id,
+                authorUserId: user.uid,
+                content: commentText,
+                createdAt: serverTimestamp(),
+            };
+            const commentDocRef = await addDocumentNonBlocking(commentsColRef, commentData);
+            if (!commentDocRef) throw new Error("Failed to create comment");
+
+            await updateDocumentNonBlocking(commentDocRef, { id: commentDocRef.id });
+
+            const topicRef = doc(firestore, 'forumTopics', topicId);
+            await updateDocumentNonBlocking(topicRef, {
+                totalComments: increment(1),
+                lastPostAt: serverTimestamp(),
+            });
+
+            setCommentText('');
+
+        } catch (error) {
+             console.error("Error submitting comment:", error);
+            toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'आपकी टिप्पणी पोस्ट करने में विफल।' });
+        } finally {
+            setIsSubmittingComment(false);
+        }
+    };
 
     return (
         <div className="flex gap-4">
-            <Avatar className="mt-1 h-10 w-10">
+            <Avatar className="mt-1 h-10 w-10 flex-shrink-0">
                 {isAuthorLoading ? <Loader2 className="h-full w-full animate-spin" /> : (
                     <>
                         <AvatarImage src={author?.profileImageUrl || `https://picsum.photos/seed/${post.authorUserId}/100/100`} />
@@ -120,10 +203,45 @@ function PostItem({ post, topicId, onReplyClick }: { post: Post, topicId: string
                     <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={handleLikeToggle} disabled={!user || isLiking}>
                         <ThumbsUp className={cn("h-4 w-4", hasLiked && "fill-current text-primary")} /> {post.likes || 0}
                     </Button>
-                     <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={onReplyClick}>
-                        <MessageSquare className="h-4 w-4" /> जवाब दें
+                    <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={() => setShowComments(!showComments)}>
+                        <MessageSquare className="h-4 w-4" /> {areCommentsLoading ? '...' : comments?.length || 0} जवाब
                     </Button>
                 </div>
+                {showComments && (
+                    <div className="pl-0 md:pl-8 mt-4 space-y-4">
+                        {areCommentsLoading ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin"/> टिप्पणियाँ लोड हो रही हैं...
+                            </div>
+                        ) : comments && comments.length > 0 ? (
+                            comments.map(comment => <CommentItem key={comment.id} comment={comment} />)
+                        ) : (
+                            <p className="text-sm text-muted-foreground">अभी तक कोई टिप्पणी नहीं है।</p>
+                        )}
+                        
+                        {user && (
+                            <form onSubmit={handleCommentSubmit} className="flex items-start gap-2 pt-4">
+                                <Avatar className="h-8 w-8 flex-shrink-0">
+                                    <AvatarImage src={user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`} />
+                                    <AvatarFallback>{user.displayName?.charAt(0) || 'A'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-grow">
+                                <Textarea 
+                                    placeholder="एक टिप्पणी लिखें..."
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    className="min-h-[60px] text-sm"
+                                    disabled={isSubmittingComment}
+                                />
+                                <Button type="submit" size="sm" className="mt-2" disabled={isSubmittingComment || !commentText.trim()}>
+                                    {isSubmittingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                    <span className="ml-2">टिप्पणी पोस्ट करें</span>
+                                </Button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -141,10 +259,6 @@ export default function TopicPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-    const handleFocusReply = () => {
-        replyTextareaRef.current?.focus();
-    };
 
     const topicRef = useMemoFirebase(() => {
         if (!firestore || !topicId) return null;
@@ -186,10 +300,10 @@ export default function TopicPage() {
 
             await updateDocumentNonBlocking(doc(firestore, `forumTopics/${topicId}/posts`, postDocRef.id), { id: postDocRef.id });
 
-            // Update topic's lastPostAt and totalPosts
+            // Update topic's lastPostAt and totalPosts using increment
             await updateDocumentNonBlocking(topicRef!, {
                 lastPostAt: serverTimestamp(),
-                totalPosts: (posts?.length || 0) + 1
+                totalPosts: increment(1)
             });
             
             toast({ title: 'आपका जवाब पोस्ट कर दिया गया है!' });
@@ -227,7 +341,7 @@ export default function TopicPage() {
                     <Separator />
                     {arePostsLoading && <div className="flex justify-center p-6"><Loader2 className="h-6 w-6 animate-spin" /></div>}
                     <div className="space-y-8">
-                        {posts && posts.map(post => <PostItem key={post.id} post={post} topicId={topicId} onReplyClick={handleFocusReply} />)}
+                        {posts && topic && posts.map(post => <PostItem key={post.id} post={post} topicId={topicId} topic={topic} />)}
                     </div>
                 </CardContent>
                  <CardFooter>
@@ -239,7 +353,7 @@ export default function TopicPage() {
                                     name="content"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-lg font-semibold">अपना जवाब दें</FormLabel>
+                                            <FormLabel className="text-lg font-semibold">इस विषय में एक नया जवाब जोड़ें</FormLabel>
                                             <FormControl>
                                                 <Textarea
                                                     ref={(e) => {

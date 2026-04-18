@@ -218,7 +218,10 @@ service cloud.firestore {
     match /forumTopics/{topicId} {
       allow get, list: if true;
       allow create: if isSignedIn() && isDocumentOwner(request.resource.data, 'creatorUserId');
-      allow update: if resource != null && (isDocumentOwner(resource.data, 'creatorUserId') || isAdmin()) && request.resource.data.creatorUserId == resource.data.creatorUserId;
+      allow update: if resource != null && (
+        (isDocumentOwner(resource.data, 'creatorUserId') || isAdmin()) ||
+        (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastPostAt', 'totalPosts', 'totalComments']))
+      ) && request.resource.data.creatorUserId == resource.data.creatorUserId;
       allow delete: if resource != null && (isDocumentOwner(resource.data, 'creatorUserId') || isAdmin());
     }
     
