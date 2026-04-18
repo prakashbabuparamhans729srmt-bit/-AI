@@ -174,7 +174,7 @@ export default function GuruTrainingPage() {
                         ))}
                     </div>
                     <div className="text-center pt-6">
-                        <Button variant="outline" asChild><Link href="/wip">सभी देखें</Link></Button>
+                        <Button variant="outline" asChild><Link href="/gurus">सभी देखें</Link></Button>
                     </div>
                 </CardContent>
             </Card>

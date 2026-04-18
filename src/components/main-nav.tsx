@@ -11,6 +11,7 @@ import {
   Settings,
   Smile,
   Scale,
+  ShieldCheck,
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/community', icon: <MessageCircle />, label: 'सामुदायिक मंच' },
   { href: '/profile', icon: <Users />, label: 'परिवार प्रोफाइल' },
   { href: '/guru-training', icon: <GraduationCap />, label: 'गुरु प्रशिक्षण' },
+  { href: '/gurus', icon: <ShieldCheck />, label: 'प्रमाणित गुरु' },
   { href: '/settings', icon: <Settings />, label: 'सेटिंग्स' },
 ];
 
