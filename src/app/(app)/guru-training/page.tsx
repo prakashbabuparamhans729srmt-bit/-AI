@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Star, Calendar, FileText, Loader2, GraduationCap } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc, setDocumentNonBlocking } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -44,6 +44,8 @@ type CommunityEvent = {
     id: string;
     startDate: string;
     name: string;
+    attendeeIds?: string[];
+    attendeeCount?: number;
 };
 
 
@@ -53,6 +55,7 @@ export default function GuruTrainingPage() {
     const { toast } = useToast();
     const router = useRouter();
     const [isJoining, setIsJoining] = useState(false);
+    const [registeringEventId, setRegisteringEventId] = useState<string | null>(null);
 
     // Fetch user's main profile to get name, etc.
     const userProfileRef = useMemoFirebase(() => {
@@ -136,6 +139,41 @@ export default function GuruTrainingPage() {
         return date.toLocaleDateString('hi-IN', options);
         } catch (e) {
         return isoDate;
+        }
+    };
+
+    const handleRegisterForEvent = async (event: CommunityEvent) => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'लॉग इन आवश्यक है', description: 'किसी कार्यक्रम में शामिल होने के लिए कृपया लॉग इन करें।' });
+            router.push('/login');
+            return;
+        }
+        setRegisteringEventId(event.id);
+        
+        const eventDocRef = doc(firestore, 'communityEvents', event.id);
+        const currentAttendeeIds = event.attendeeIds || [];
+        const isRegistered = currentAttendeeIds.includes(user.uid);
+        
+        let newAttendeeIds;
+        if (isRegistered) {
+            newAttendeeIds = currentAttendeeIds.filter(id => id !== user.uid);
+            toast({ title: 'पंजीकरण रद्द किया गया', description: `आप अब "${event.name}" कार्यक्रम में शामिल नहीं हैं।`});
+        } else {
+            newAttendeeIds = [...currentAttendeeIds, user.uid];
+            toast({ title: 'पंजीकरण सफल!', description: `आप "${event.name}" कार्यक्रम में शामिल हो गए हैं।`});
+        }
+        const newAttendeeCount = newAttendeeIds.length;
+
+        try {
+            await updateDocumentNonBlocking(eventDocRef, { 
+                attendeeIds: newAttendeeIds,
+                attendeeCount: newAttendeeCount
+            });
+        } catch (error) {
+            console.error('Error registering for event:', error);
+            toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'पंजीकरण में विफल। कृपया पुन: प्रयास करें।' });
+        } finally {
+            setRegisteringEventId(null);
         }
     };
     
@@ -279,18 +317,29 @@ export default function GuruTrainingPage() {
                 <CardContent className="space-y-4">
                      {workshopsLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
                      {!workshopsLoading && (!workshops || workshops.length === 0) && <p className="p-6 text-muted-foreground text-center">अभी कोई आगामी कार्यशाला नहीं है।</p>}
-                    {workshops && workshops.map((event) => (
-                        <div key={event.id} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
-                            <Calendar className="h-6 w-6 text-primary" />
-                            <div>
-                                <p className="font-bold">{formatEventDate(event.startDate)}:</p>
-                                <p>{event.name}</p>
+                    {workshops && workshops.map((event) => {
+                        const isRegistered = user ? event.attendeeIds?.includes(user.uid) : false;
+                        const isRegistering = registeringEventId === event.id;
+                        return (
+                            <div key={event.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-muted rounded-lg">
+                                <div className='flex items-center gap-4 flex-grow'>
+                                    <Calendar className="h-6 w-6 text-primary flex-shrink-0"/>
+                                    <div>
+                                        <p className="font-bold">{formatEventDate(event.startDate)}:</p>
+                                        <p>{event.name}</p>
+                                    </div>
+                                </div>
+                                <Button 
+                                    onClick={() => handleRegisterForEvent(event)} 
+                                    disabled={!user || isRegistering}
+                                    variant={isRegistered ? "secondary" : "default"}
+                                    className="w-full sm:w-auto"
+                                >
+                                    {isRegistering ? <Loader2 className="h-4 w-4 animate-spin"/> : (isRegistered ? 'आप पंजीकृत हैं' : 'पंजीकरण करें')}
+                                </Button>
                             </div>
-                        </div>
-                    ))}
-                    <div className="text-center pt-4">
-                        <Button asChild><Link href="/wip">पंजीकरण करें</Link></Button>
-                    </div>
+                        );
+                    })}
                 </CardContent>
             </Card>
 
