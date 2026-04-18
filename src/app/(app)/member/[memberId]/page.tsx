@@ -1,14 +1,16 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { useFirestore, useDoc, useCollection, useMemoFirebase, useUser, setDocumentNonBlocking } from '@/firebase';
+import { doc, collection, query, where, getDoc, serverTimestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CornerUpLeft, Target, BookOpen } from 'lucide-react';
+import { Loader2, CornerUpLeft, Target, BookOpen, MessageSquare } from 'lucide-react';
 import { differenceInYears } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 type UserProfile = {
     id: string;
@@ -31,6 +33,9 @@ export default function MemberProfilePage() {
     const { memberId } = useParams() as { memberId: string };
     const router = useRouter();
     const firestore = useFirestore();
+    const { user } = useUser();
+    const { toast } = useToast();
+    const [isChatLoading, setIsChatLoading] = useState(false);
 
     const userProfileRef = useMemoFirebase(() => {
         if (!firestore || !memberId) return null;
@@ -53,6 +58,42 @@ export default function MemberProfilePage() {
         }
     };
     const userAge = calculateAge(userProfile?.dateOfBirth);
+    
+    const handleStartChat = async () => {
+        if (!user) {
+            toast({ title: 'बातचीत शुरू करने के लिए कृपया लॉग इन करें।', variant: 'destructive' });
+            router.push('/login');
+            return;
+        }
+        if (user.uid === memberId) {
+            toast({ title: 'आप खुद से बात नहीं कर सकते।', variant: 'destructive' });
+            return;
+        }
+        
+        setIsChatLoading(true);
+
+        const channelId = [user.uid, memberId].sort().join('_');
+        const channelRef = doc(firestore, 'chat_channels', channelId);
+        
+        try {
+            const channelSnap = await getDoc(channelRef);
+            if (!channelSnap.exists()) {
+                await setDocumentNonBlocking(channelRef, {
+                    id: channelId,
+                    participantIds: [user.uid, memberId],
+                    createdAt: serverTimestamp(),
+                    lastUpdatedAt: serverTimestamp(),
+                    lastMessage: 'चैट शुरू हो गया है।',
+                }, { merge: true });
+            }
+            router.push(`/chat/${channelId}`);
+        } catch (error) {
+            console.error("Error creating/getting chat channel:", error);
+            toast({ title: 'चैट शुरू करने में विफल।', variant: 'destructive' });
+        } finally {
+            setIsChatLoading(false);
+        }
+    };
 
     if (isProfileLoading) {
         return (
@@ -88,12 +129,20 @@ export default function MemberProfilePage() {
                         <AvatarFallback>{userProfile.firstName?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                 </CardHeader>
-                <CardContent className="text-center space-y-2">
-                    <CardTitle className="font-headline text-3xl">{userProfile.firstName} {userProfile.lastName}</CardTitle>
-                    <CardDescription className="text-lg">
-                        {userProfile.roleInFamily || 'परिवार का सदस्य'}
-                        {userAge && ` | आयु: ${userAge} वर्ष`}
-                    </CardDescription>
+                <CardContent className="text-center space-y-4">
+                    <div className="space-y-2">
+                        <CardTitle className="font-headline text-3xl">{userProfile.firstName} {userProfile.lastName}</CardTitle>
+                        <CardDescription className="text-lg">
+                            {userProfile.roleInFamily || 'परिवार का सदस्य'}
+                            {userAge && ` | आयु: ${userAge} वर्ष`}
+                        </CardDescription>
+                    </div>
+                     {user?.uid !== memberId && (
+                        <Button onClick={handleStartChat} disabled={isChatLoading}>
+                            {isChatLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
+                            बात करें
+                        </Button>
+                    )}
                 </CardContent>
             </Card>
 
