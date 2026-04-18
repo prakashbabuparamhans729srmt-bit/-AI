@@ -378,7 +378,7 @@ export default function DashboardPage() {
                     <p className="font-semibold">{member.firstName}</p>
                     <p className="text-xs text-muted-foreground">{member.roleInFamily || 'सदस्य'}</p>
                     <Button variant="outline" size="sm" asChild>
-                      <Link href="/profile">देखें</Link>
+                      <Link href={`/member/${member.id}`}>देखें</Link>
                     </Button>
                   </div>
                 ))
