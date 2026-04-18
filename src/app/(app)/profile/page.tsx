@@ -299,7 +299,7 @@ export default function ProfilePage() {
                         <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
                             {articlesInCategory.map(article => (
                                 <li key={article.id}>
-                                    <Link href={'/wip'} className="hover:underline hover:text-primary transition-colors">{article.title}</Link>
+                                    <Link href={`/knowledge-hub/${article.id}`} className="hover:underline hover:text-primary transition-colors">{article.title}</Link>
                                 </li>
                             ))}
                         </ul>
