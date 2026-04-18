@@ -823,6 +823,13 @@
         "attendeeCount": {
           "type": "number",
           "description": "Total number of registered attendees."
+        },
+        "reminderSetUserIds": {
+          "type": "array",
+          "description": "List of UserProfile IDs who have set a reminder for the event.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [

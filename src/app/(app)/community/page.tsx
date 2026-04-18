@@ -6,7 +6,7 @@ import { collection, query, orderBy, collectionGroup, where, limit, doc } from '
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Calendar, Plus, Search, ThumbsUp, Mic, Loader2, Users } from 'lucide-react';
+import { Calendar, Plus, Search, ThumbsUp, Mic, Loader2, Users, Bell } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +26,7 @@ type Event = {
   name: string;
   attendeeIds?: string[];
   attendeeCount?: number;
+  reminderSetUserIds?: string[];
 };
 type Post = {
   id: string;
@@ -48,6 +49,7 @@ export default function CommunityPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [registeringEventId, setRegisteringEventId] = useState<string | null>(null);
+  const [remindingEventId, setRemindingEventId] = useState<string | null>(null);
 
   const topicsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -126,6 +128,39 @@ export default function CommunityPage() {
         toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'पंजीकरण में विफल। कृपया पुन: प्रयास करें।' });
     } finally {
         setRegisteringEventId(null);
+    }
+  };
+
+  const handleSetReminder = async (event: Event) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'लॉग इन आवश्यक है', description: 'किसी कार्यक्रम के लिए अनुस्मारक सेट करने के लिए कृपया लॉग इन करें।' });
+        router.push('/login');
+        return;
+    }
+    setRemindingEventId(event.id);
+
+    const eventDocRef = doc(firestore, 'communityEvents', event.id);
+    const currentReminderIds = event.reminderSetUserIds || [];
+    const isReminderSet = currentReminderIds.includes(user.uid);
+    
+    let newReminderIds;
+    if (isReminderSet) {
+        newReminderIds = currentReminderIds.filter(id => id !== user.uid);
+        toast({ title: 'अनुस्मारक हटाया गया', description: `अब आपको "${event.name}" के लिए याद नहीं दिलाया जाएगा।`});
+    } else {
+        newReminderIds = [...currentReminderIds, user.uid];
+        toast({ title: 'अनुस्मारक सेट किया गया!', description: `आपको "${event.name}" कार्यक्रम के लिए याद दिलाया जाएगा।`});
+    }
+
+    try {
+        await updateDocumentNonBlocking(eventDocRef, { 
+            reminderSetUserIds: newReminderIds,
+        });
+    } catch (error) {
+        console.error('Error setting reminder:', error);
+        toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'अनुस्मारक सेट करने में विफल। कृपया पुन: प्रयास करें।' });
+    } finally {
+        setRemindingEventId(null);
     }
   };
 
@@ -242,6 +277,8 @@ export default function CommunityPage() {
           {events && events.map((event) => {
             const isRegistered = user ? event.attendeeIds?.includes(user.uid) : false;
             const isRegistering = registeringEventId === event.id;
+            const isReminderSet = user ? event.reminderSetUserIds?.includes(user.uid) : false;
+            const isSettingReminder = remindingEventId === event.id;
             return (
                 <div key={event.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-muted rounded-lg">
                     <div className='flex items-center gap-4 flex-grow'>
@@ -259,7 +296,13 @@ export default function CommunityPage() {
                         >
                             {isRegistering ? <Loader2 className="h-4 w-4 animate-spin"/> : (isRegistered ? 'आप शामिल हैं' : 'शामिल हों')}
                         </Button>
-                        <Button variant="outline" asChild><Link href="/wip">याद दिलाएं</Link></Button>
+                        <Button 
+                            onClick={() => handleSetReminder(event)} 
+                            disabled={!user || isSettingReminder}
+                            variant={isReminderSet ? "secondary" : "outline"}
+                        >
+                            {isSettingReminder ? <Loader2 className="h-4 w-4 animate-spin"/> : (isReminderSet ? <><Bell className="h-4 w-4 mr-2"/>अनुस्मारक सेट है</> : 'याद दिलाएं')}
+                        </Button>
                     </div>
                 </div>
             );

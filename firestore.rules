@@ -321,6 +321,14 @@ service cloud.firestore {
           // The user must only be adding or removing themselves
           (request.resource.data.attendeeIds == resource.data.attendeeIds.concat([request.auth.uid]) ||
            resource.data.attendeeIds == request.resource.data.attendeeIds.concat([request.auth.uid]))
+        ) ||
+        // Any signed-in user can set/unset a reminder for themselves
+        (isSignedIn() &&
+          // Only reminder field can be changed
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reminderSetUserIds']) &&
+          // The user must only be adding or removing themselves
+          (request.resource.data.reminderSetUserIds == resource.data.reminderSetUserIds.concat([request.auth.uid]) ||
+           resource.data.reminderSetUserIds == request.resource.data.reminderSetUserIds.concat([request.auth.uid]))
         )
       );
       allow delete: if resource != null && (isDocumentOwner(resource.data, 'organizerUserId') || isAdmin());
