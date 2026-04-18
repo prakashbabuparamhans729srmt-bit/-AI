@@ -26,12 +26,12 @@ import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const religions = [
-  { name: 'हिंदू', icon: '🕉️' },
-  { name: 'इस्लाम', icon: '☪️' },
-  { name: 'ईसाई', icon: '✝️' },
-  { name: 'सिख', icon: '🯴' },
-  { name: 'बौद्ध', icon: '☸️' },
-  { name: 'यहूदी', icon: '✡️' },
+  { name: 'हिंदू', icon: '🕉️', id: 'Hinduism' },
+  { name: 'इस्लाम', icon: '☪️', id: 'Islam' },
+  { name: 'ईसाई', icon: '✝️', id: 'Christianity' },
+  { name: 'सिख', icon: '🯴', id: 'Sikhism' },
+  { name: 'बौद्ध', icon: '☸️', id: 'Buddhism' },
+  { name: 'यहूदी', icon: '✡️', id: 'Judaism' },
 ];
 
 const comparisonData = [
@@ -124,7 +124,7 @@ export default function KnowledgeHubPage() {
         <CardContent className="grid grid-cols-3 md:grid-cols-6 gap-4">
           {religions.map((religion) => (
             <Button variant="outline" key={religion.name} className="flex flex-col h-24 text-lg" asChild>
-              <Link href="/wip">
+              <Link href={`/knowledge-hub/religion/${religion.id}`}>
                 <span className="text-4xl">{religion.icon}</span>
                 <span>{religion.name}</span>
               </Link>
