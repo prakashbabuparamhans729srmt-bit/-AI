@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -10,11 +11,20 @@ import Link from 'next/link';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 
-const curriculum = [
-    { year: 1, title: 'धर्म दर्शन', progress: 100, status: 'प्रमाणपत्र', details: ['सभी धर्मों का तुलनात्मक अध्ययन', 'प्रमुख ग्रंथों का सार'] },
-    { year: 2, title: 'मनोविज्ञान और परामर्श', progress: 70, status: 'जारी रखें', details: ['पारिवारिक परामर्श तकनीक', 'संकट प्रबंधन'] },
-    { year: 3, title: 'नैतिकता और नियम', progress: 40, status: 'जारी रखें', details: ['कानूनी ढांचा', 'मध्यस्थता कौशल'] },
-];
+// Types based on backend.json
+type TrainingCourse = {
+    id: string;
+    name: string;
+    description: string;
+    durationYears: number;
+};
+
+type CourseModule = {
+    id: string;
+    name: string;
+    description: string;
+    syllabusTopics: string[];
+};
 
 type Guru = {
     id: string;
@@ -36,6 +46,22 @@ type CommunityEvent = {
 
 export default function GuruTrainingPage() {
     const firestore = useFirestore();
+
+    // Fetch the main training course (assuming one for now)
+    const coursesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'trainingCourses'), limit(1));
+    }, [firestore]);
+    const { data: courses, isLoading: coursesLoading } = useCollection<TrainingCourse>(coursesQuery);
+    const course = courses?.[0];
+
+    // Fetch modules for that course
+    const modulesQuery = useMemoFirebase(() => {
+        if (!firestore || !course?.id) return null;
+        return query(collection(firestore, `trainingCourses/${course.id}/modules`), orderBy('name', 'asc'));
+    }, [firestore, course]);
+    const { data: modules, isLoading: modulesLoading } = useCollection<CourseModule>(modulesQuery);
+
 
     const gurusQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -59,6 +85,8 @@ export default function GuruTrainingPage() {
         return isoDate;
         }
     };
+    
+    const curriculumLoading = coursesLoading || modulesLoading;
 
     return (
         <div className="space-y-8">
@@ -77,29 +105,40 @@ export default function GuruTrainingPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">📚 गुरु प्रशिक्षण पाठ्यक्रम (3 वर्षीय)</CardTitle>
+                    <CardTitle className="font-headline">📚 {curriculumLoading ? 'पाठ्यक्रम लोड हो रहा है...' : course?.name || 'गुरु प्रशिक्षण पाठ्यक्रम'}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {curriculum.map(item => (
-                        <div key={item.year} className="space-y-3 p-4 border rounded-lg">
-                           <div className="flex justify-between items-center">
-                             <h3 className="font-bold text-lg">🕉️ वर्ष {item.year}: {item.title}</h3>
-                             <Button variant={item.progress === 100 ? "secondary" : "default"} size="sm" asChild>
-                                <Link href="/wip">
-                                  {item.progress === 100 && <FileText className="mr-2 h-4 w-4" />}
-                                  {item.status}
-                                </Link>
-                            </Button>
-                           </div>
-                           <ul className="list-disc pl-5 text-muted-foreground">
-                               {item.details.map(d => <li key={d}>{d}</li>)}
-                           </ul>
-                           <div className="flex items-center gap-2">
-                                <Progress value={item.progress} className="flex-grow" />
-                                <span className="text-sm font-medium">{item.progress}%</span>
-                           </div>
-                        </div>
-                    ))}
+                    {curriculumLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
+                    {!curriculumLoading && (!modules || modules.length === 0) && <p className="p-6 text-muted-foreground text-center">अभी कोई पाठ्यक्रम मॉड्यूल उपलब्ध नहीं है।</p>}
+                    
+                    {modules && modules.map((item, index) => {
+                        // Using index for mock progress data
+                        const progress = Math.max(20, 100 - index * 35);
+                        const status = progress === 100 ? 'प्रमाणपत्र' : 'जारी रखें';
+
+                        return (
+                            <div key={item.id} className="space-y-3 p-4 border rounded-lg">
+                               <div className="flex justify-between items-center">
+                                 <h3 className="font-bold text-lg">🕉️ {item.name}</h3>
+                                 <Button variant={progress === 100 ? "secondary" : "default"} size="sm" asChild>
+                                    <Link href="/wip">
+                                      {progress === 100 && <FileText className="mr-2 h-4 w-4" />}
+                                      {status}
+                                    </Link>
+                                </Button>
+                               </div>
+                               {item.syllabusTopics && (
+                                 <ul className="list-disc pl-5 text-muted-foreground">
+                                     {item.syllabusTopics.map(d => <li key={d}>{d}</li>)}
+                                 </ul>
+                               )}
+                               <div className="flex items-center gap-2">
+                                    <Progress value={progress} className="flex-grow" />
+                                    <span className="text-sm font-medium">{progress}%</span>
+                               </div>
+                            </div>
+                        )
+                    })}
                 </CardContent>
             </Card>
 
