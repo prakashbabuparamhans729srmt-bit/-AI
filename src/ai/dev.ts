@@ -7,3 +7,4 @@ import '@/ai/flows/interfaith-concept-comparison-flow.ts';
 import '@/ai/flows/personalized-daily-wisdom.ts';
 import '@/ai/flows/ai-guru-crisis-counseling.ts';
 import '@/ai/flows/support-chatbot-flow.ts';
+import '@/ai/flows/text-to-speech-flow.ts';

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -7,8 +8,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CornerUpLeft } from 'lucide-react';
+import { Loader2, CornerUpLeft, Volume2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
+import { useToast } from '@/hooks/use-toast';
 
 type Story = {
   id: string;
@@ -25,6 +28,9 @@ export default function StoryDetailPage() {
   const { storyId } = useParams() as { storyId: string };
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
 
   const storyRef = useMemoFirebase(() => {
     if (!firestore || !storyId) return null;
@@ -32,6 +38,29 @@ export default function StoryDetailPage() {
   }, [firestore, storyId]);
 
   const { data: story, isLoading } = useDoc<Story>(storyRef);
+
+  const handleListenStory = async () => {
+    if (!story) return;
+
+    setIsGeneratingAudio(true);
+    setAudioSrc(null);
+    try {
+      // Using a smaller part of the story for demo purposes to avoid long generation times and high costs
+      const storyContentForAudio = story.content.substring(0, 1000);
+      const response = await textToSpeech(storyContentForAudio);
+      setAudioSrc(response.audioDataUri);
+    } catch (error) {
+      console.error("Error generating story audio:", error);
+      toast({
+        variant: 'destructive',
+        title: 'ऑडियो बनाने में विफल',
+        description: 'कहानी का ऑडियो संस्करण बनाने में एक त्रुटि हुई।',
+      });
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -80,6 +109,26 @@ export default function StoryDetailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-6 flex flex-col items-center gap-4">
+            <Button onClick={handleListenStory} disabled={isGeneratingAudio}>
+              {isGeneratingAudio ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ऑडियो बन रहा है...
+                </>
+              ) : (
+                <>
+                  <Volume2 className="mr-2 h-4 w-4" />
+                  कहानी सुनें
+                </>
+              )}
+            </Button>
+            {audioSrc && (
+              <audio controls src={audioSrc} className="w-full max-w-md">
+                आपका ब्राउज़र ऑडियो एलिमेंट का समर्थन नहीं करता है।
+              </audio>
+            )}
+          </div>
           <div className="prose prose-lg dark:prose-invert max-w-none text-xl leading-relaxed whitespace-pre-wrap">
             {story.content}
           </div>
