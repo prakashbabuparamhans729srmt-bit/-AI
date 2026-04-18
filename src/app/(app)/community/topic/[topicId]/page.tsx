@@ -49,14 +49,49 @@ type ForumComment = {
     authorUserId: string;
     content: string;
     createdAt: { seconds: number; nanoseconds: number };
+    likes?: number;
+    likedBy?: string[];
 };
 
 // Component for a single comment
-function CommentItem({ comment }: { comment: ForumComment }) {
+function CommentItem({ comment, topicId, postId }: { comment: ForumComment; topicId: string; postId: string; }) {
     const firestore = useFirestore();
+    const { user } = useUser();
+    const { toast } = useToast();
+    const [isLiking, setIsLiking] = useState(false);
+
     const { data: author, isLoading: isAuthorLoading } = useDoc<UserProfile>(
         useMemoFirebase(() => comment.authorUserId ? doc(firestore, 'users', comment.authorUserId) : null, [firestore, comment.authorUserId])
     );
+    
+    const hasLiked = useMemo(() => comment.likedBy?.includes(user?.uid || ''), [comment.likedBy, user]);
+
+    const handleCommentLikeToggle = async () => {
+        if (!user || !firestore || isLiking) return;
+        setIsLiking(true);
+
+        const commentRef = doc(firestore, `forumTopics/${topicId}/posts/${postId}/comments`, comment.id);
+        const currentLikedBy = comment.likedBy || [];
+        
+        let newLikedBy;
+        if (hasLiked) {
+            newLikedBy = currentLikedBy.filter(uid => uid !== user.uid);
+        } else {
+            newLikedBy = [...currentLikedBy, user.uid];
+        }
+        
+        try {
+            await updateDocumentNonBlocking(commentRef, {
+                likes: newLikedBy.length,
+                likedBy: newLikedBy
+            });
+        } catch (error) {
+            console.error("Failed to update comment like", error);
+            toast({ variant: "destructive", title: "एक त्रुटि हुई", description: "टिप्पणी पसंद करने में विफल।" });
+        } finally {
+            setIsLiking(false);
+        }
+    };
 
     const formatCommentDate = (timestamp: { seconds: number; nanoseconds: number }) => {
         if (!timestamp) return '...';
@@ -87,6 +122,11 @@ function CommentItem({ comment }: { comment: ForumComment }) {
                     <p className="text-xs text-muted-foreground">{formatCommentDate(comment.createdAt)}</p>
                 </div>
                 <p className="text-sm mt-1 whitespace-pre-wrap">{comment.content}</p>
+                 <div className="flex items-center mt-1">
+                    <Button variant="ghost" size="sm" className="flex items-center gap-1 h-7 px-1 text-xs" onClick={handleCommentLikeToggle} disabled={!user || isLiking}>
+                        <ThumbsUp className={cn("h-3 w-3", hasLiked && "fill-current text-primary")} /> {comment.likes || 0}
+                    </Button>
+                </div>
             </div>
         </div>
     );
@@ -165,6 +205,8 @@ function PostItem({ post, topicId, topic }: { post: Post, topicId: string, topic
                 authorUserId: user.uid,
                 content: commentText,
                 createdAt: serverTimestamp(),
+                likes: 0,
+                likedBy: [],
             };
             const commentDocRef = await addDocumentNonBlocking(commentsColRef, commentData);
             if (!commentDocRef) throw new Error("Failed to create comment");
@@ -222,7 +264,7 @@ function PostItem({ post, topicId, topic }: { post: Post, topicId: string, topic
                                 <Loader2 className="h-4 w-4 animate-spin"/> टिप्पणियाँ लोड हो रही हैं...
                             </div>
                         ) : comments && comments.length > 0 ? (
-                            comments.map(comment => <CommentItem key={comment.id} comment={comment} />)
+                            comments.map(comment => <CommentItem key={comment.id} comment={comment} topicId={topicId} postId={post.id} />)
                         ) : (
                             <p className="text-sm text-muted-foreground">अभी तक कोई टिप्पणी नहीं है।</p>
                         )}

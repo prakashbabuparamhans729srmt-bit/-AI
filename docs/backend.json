@@ -747,6 +747,13 @@
         "likes": {
           "type": "number",
           "description": "The number of likes received by this comment."
+        },
+        "likedBy": {
+          "type": "array",
+          "description": "Array of user IDs who have liked this comment.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [

@@ -272,7 +272,30 @@ service cloud.firestore {
     match /forumTopics/{topicId}/posts/{postId}/comments/{commentId} {
       allow get, list: if true;
       allow create: if isSignedIn() && isDocumentOwner(request.resource.data, 'authorUserId') && request.resource.data.forumPostId == postId;
-      allow update: if resource != null && (isDocumentOwner(resource.data, 'authorUserId') || isAdmin()) && request.resource.data.authorUserId == resource.data.authorUserId;
+      allow update: if resource != null && isSignedIn() && (
+        // Case 1: Author or Admin is editing the content.
+        ( (isDocumentOwner(resource.data, 'authorUserId') || isAdmin()) &&
+          // Ensure non-editable fields are not changed
+          request.resource.data.authorUserId == resource.data.authorUserId &&
+          request.resource.data.forumPostId == resource.data.forumPostId &&
+          // Only allow content to be changed by author/admin
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content'])
+        ) ||
+        // Case 2: Any signed-in user is liking/unliking the comment.
+        (
+          // Only 'likes' and 'likedBy' can be changed in this case
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy']) &&
+          // Ensure the like count correctly reflects the size of the likedBy array
+          request.resource.data.likes == request.resource.data.likedBy.size() &&
+          // Ensure all other critical fields are unchanged
+          request.resource.data.content == resource.data.content &&
+          request.resource.data.authorUserId == resource.data.authorUserId &&
+          // Atomically adding a like
+          ( (request.resource.data.likedBy == resource.data.likedBy.concat([request.auth.uid])) ||
+          // Atomically removing a like
+            (resource.data.likedBy == request.resource.data.likedBy.concat([request.auth.uid])) )
+        )
+      );
       allow delete: if resource != null && (isDocumentOwner(resource.data, 'authorUserId') || isAdmin());
     }
 
