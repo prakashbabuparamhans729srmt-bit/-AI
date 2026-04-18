@@ -109,7 +109,7 @@ export default function KidsCornerPage() {
              </Card>
           ))}
           {!activitiesLoading && activities?.map((activity) => (
-            <Link href={'/wip'} key={activity.id}>
+            <Link href={`/activity/${activity.id}`} key={activity.id}>
             <Card className="flex flex-col items-center justify-center p-4 text-center hover:bg-accent/50 hover:shadow-lg transition-all cursor-pointer h-32">
               <div className="text-primary mb-2 text-4xl">{activityIcons[activity.type] || defaultIcon}</div>
               <p className="font-semibold text-sm md:text-base">{activity.name}</p>
