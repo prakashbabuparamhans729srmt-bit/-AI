@@ -1,16 +1,28 @@
-'use client';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useState, useRef, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Loader2, Send } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { rulesExpert } from '@/ai/flows/rules-expert-flow';
+'use server';
+/**
+ * @fileOverview A Genkit flow for a Rules Expert chatbot.
+ *
+ * - rulesExpert - A function that handles answering questions about the rule code.
+ * - RulesExpertInput - The input type for the function.
+ * - RulesExpertOutput - The return type for the function.
+ */
 
-type ChatMessage = {
-    sender: 'user' | 'bot';
-    text: string;
-};
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
+
+const RulesExpertInputSchema = z.object({
+  question: z.string().describe("The user's question about the rule code."),
+});
+export type RulesExpertInput = z.infer<typeof RulesExpertInputSchema>;
+
+const RulesExpertOutputSchema = z.object({
+  answer: z.string().describe('A helpful answer based on the provided rule code context.'),
+});
+export type RulesExpertOutput = z.infer<typeof RulesExpertOutputSchema>;
+
+export async function rulesExpert(input: RulesExpertInput): Promise<RulesExpertOutput> {
+  return rulesExpertFlow(input);
+}
 
 const ruleCodeChart = `
 ╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
@@ -226,171 +238,30 @@ const ruleCodeChart = `
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 `;
 
-const mainComponents = [
-    {
-      title: 'शीर्षक भाग (Header Section)',
-      items: ['कुलगुरु - नियम संहिता', 'संस्कृत सूत्र: "यतो धर्मः ततो जयः"'],
-    },
-    {
-      title: 'नियमों का वर्गीकरण (6 मुख्य श्रेणियां)',
-      items: [
-        '🔬 प्राकृतिक नियम (Natural Laws)',
-        '👥 सामाजिक नियम (Social Laws)',
-        '⚖️ कानूनी नियम (Legal Laws)',
-        '🧘 आध्यात्मिक नियम (Spiritual Laws)',
-        '🏛️ धार्मिक नियम (Religious Laws)',
-        '🎮 खेल के नियम (Sports Rules)',
-      ],
-    },
-    {
-      title: 'प्राकृतिक नियमों का विस्तृत चार्ट',
-      items: [
-        '🌍 भौतिकी के नियम (गति, ऊष्मागतिकी, विद्युत चुंबकत्व)',
-        '🧪 रसायन विज्ञान के नियम (परमाणु संरचना, आवर्त सारणी)',
-        '🌿 जीव विज्ञान के नियम (आनुवंशिकी, पारिस्थितिकी)',
-      ],
-    },
-    {
-      title: 'नियमों का पदानुक्रम (Hierarchy Chart)',
-      items: ['ब्रह्मांडीय नियम → प्राकृतिक नियम → भौतिक/रासायनिक/जैविक नियम → मानवीय नियम'],
-    },
-    {
-      title: 'विशेष नियम संग्रह',
-      items: ['🔴 जीवन के 5 सार्वभौमिक नियम', '📜 प्राचीन भारतीय ऋषियों के नियम'],
-    },
-    {
-      title: 'इंटरएक्टिव फीचर्स',
-      items: ['🔍 नियम खोज बॉक्स', '🏷️ लोकप्रिय टैग', '🔔 आज का विशेष नियम'],
-    },
-    {
-      title: 'AI चैट इंटरफेस',
-      items: ['🤖 कुलगुरु AI से नियमों के बारे में बातचीत'],
-    },
-  ];
+const prompt = ai.definePrompt({
+  name: 'rulesExpertPrompt',
+  input: { schema: RulesExpertInputSchema },
+  output: { schema: RulesExpertOutputSchema },
+  prompt: `You are a "कुलगुरु - नियम संहिता" expert. Your knowledge is strictly limited to the following 'नियम संहिता' (Rule Code) provided below.
+Answer the user's question in simple Hindi based *only* on the provided context. If the answer is not in the context, say that you do not have information on that topic.
 
-export default function RulesPage() {
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        { sender: 'bot', text: 'नमस्ते! मैं कुलगुरु नियम संहिता विशेषज्ञ हूँ। आप किस नियम के बारे में जानना चाहेंगे?' }
-    ]);
-    const [userInput, setUserInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
+Rule Code Context:
+\`\`\`
+${ruleCodeChart}
+\`\`\`
 
-    const scrollToBottom = () => {
-        setTimeout(() => {
-             if (scrollAreaRef.current) {
-                const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-                if (viewport) {
-                    viewport.scrollTop = viewport.scrollHeight;
-                }
-            }
-        }, 100);
-    };
+User's Question: {{{question}}}
+`,
+});
 
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
-    const handleChatSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!userInput.trim()) return;
-
-        const userMessage: ChatMessage = { sender: 'user', text: userInput };
-        setMessages(prev => [...prev, userMessage]);
-        setUserInput('');
-        setIsLoading(true);
-        
-        try {
-            const response = await rulesExpert({ question: userInput });
-            const botMessage: ChatMessage = { sender: 'bot', text: response.answer };
-            setMessages(prev => [...prev, botMessage]);
-        } catch (error) {
-            console.error("Rules expert chat error:", error);
-            const errorMessage: ChatMessage = { sender: 'bot', text: 'माफ़ कीजिए, मुझे उत्तर देने में कुछ समस्या आ रही है।' };
-            setMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-      <div className="space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold font-headline">📜 कुलगुरु - नियम संहिता</h1>
-          <p className="text-muted-foreground mt-2 text-lg">"यतो धर्मः ततो जयः" (जहां नियम, वहां विजय)</p>
-        </div>
-  
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline">नियम संहिता चार्ट</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs overflow-x-auto p-4 bg-muted rounded-md font-code">
-                <code>{ruleCodeChart}</code>
-            </pre>
-          </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">🤖 कुलगुरु AI चैट - नियम सहायक</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <ScrollArea className="h-60 w-full rounded-md border p-4" ref={scrollAreaRef}>
-                    <div className="space-y-4">
-                        {messages.map((message, index) => (
-                            <div key={index} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <p className={`max-w-[85%] rounded-lg p-3 text-sm ${message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                    {message.text}
-                                </p>
-                            </div>
-                        ))}
-                            {isLoading && (
-                            <div className="flex justify-start">
-                                <p className="max-w-[85%] rounded-lg bg-muted p-3 text-sm flex items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin"/>
-                                    <span>लिख रहा है...</span>
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </ScrollArea>
-            </CardContent>
-            <CardFooter>
-                    <form onSubmit={handleChatSubmit} className="flex w-full items-center space-x-2">
-                    <Input 
-                        type="text" 
-                        placeholder="नियम के बारे में पूछें..." 
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        disabled={isLoading}
-                    />
-                    <Button type="submit" size="icon" disabled={isLoading || !userInput.trim()}>
-                        <Send className="h-4 w-4" />
-                        <span className="sr-only">भेजें</span>
-                    </Button>
-                </form>
-            </CardFooter>
-        </Card>
-        
-        <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">📋 नियम अनुभाग के मुख्य घटक</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {mainComponents.map((component, index) => (
-                    <div key={index} className="py-2">
-                        <h3 className="text-lg font-semibold">{component.title}</h3>
-                        <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
-                            {component.items.map((item, i) => (
-                                <li key={i}>{item}</li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
-            </CardContent>
-        </Card>
-
-      </div>
-    );
+const rulesExpertFlow = ai.defineFlow(
+  {
+    name: 'rulesExpertFlow',
+    inputSchema: RulesExpertInputSchema,
+    outputSchema: RulesExpertOutputSchema,
+  },
+  async (input) => {
+    const { output } = await prompt(input);
+    return output!;
   }
+);
