@@ -3,13 +3,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Headset, MessageCircle, Music, BookOpen, Wind, Loader2, Star } from 'lucide-react';
+import { Headset, MessageCircle, Music, Wind, Loader2, Star, Activity as ActivityIcon, Heart, Brain } from 'lucide-react';
 import Link from 'next/link';
 import { crisisCounseling, CrisisCounselingInput, CrisisCounselingOutput } from '@/ai/flows/ai-guru-crisis-counseling';
 import { useFirestore, useCollection, useMemoFirebase, useUser, setDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, limit, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 // Mapping from Hindi UI text to English schema values
@@ -38,14 +39,6 @@ const religionMap: { [key: string]: string } = {
 };
 const religions = ['हिंदू', 'इस्लाम', 'ईसाई', 'बौद्ध', 'सिख', 'यहूदी'];
 
-
-const immediateHelp = [
-    { icon: <Music />, text: '5 मिनट का ध्यान संगीत', action: 'सुनें', href: '/wip' },
-    { icon: <MessageCircle />, text: '"ॐ" का जाप', action: 'करें', href: '/wip' },
-    { icon: <Wind />, text: '2 मिनट की गहरी सांसें', action: 'शुरू करें', href: '/wip' },
-    { icon: <BookOpen />, text: 'प्रेरणादायक कहानी', action: 'पढ़ें', href: '/wip' },
-];
-
 type Guru = {
     id: string;
     userId: string;
@@ -55,6 +48,21 @@ type Guru = {
     firstName: string;
     lastName: string;
     specializations: string[];
+};
+
+type QuickActivity = {
+  id: string;
+  name: string;
+  type: string;
+};
+
+const activityIcons: { [key: string]: React.ReactNode } = {
+  'Meditation': <Heart className="text-pink-500" />,
+  'Chanting': <Music className="text-blue-500" />,
+  'Yoga': <Wind className="text-green-500" />,
+  'Breathing': <Wind className="text-cyan-500" />,
+  'Learning': <Brain className="text-purple-500" />,
+  'default': <ActivityIcon className="text-gray-500" />,
 };
 
 const crisisToSpecializationMap: { [key: string]: string } = {
@@ -81,6 +89,17 @@ export default function CrisisCounselingPage() {
   const { user } = useUser();
   const router = useRouter();
   const { toast } = useToast();
+
+  const quickActivitiesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'activities'),
+      where('type', 'in', ['Meditation', 'Chanting', 'Yoga', 'Breathing']),
+      limit(4)
+    );
+  }, [firestore]);
+
+  const { data: quickActivities, isLoading: areActivitiesLoading } = useCollection<QuickActivity>(quickActivitiesQuery);
 
 
   useEffect(() => {
@@ -266,15 +285,28 @@ export default function CrisisCounselingPage() {
                 <CardTitle className="font-headline text-2xl">🧘 शांति के लिए तुरंत उपाय</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {immediateHelp.map(item => (
-                    <div key={item.text} className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                        <div className="flex items-center gap-3">
-                            <div className="text-primary">{item.icon}</div>
-                            <p>{item.text}</p>
-                        </div>
-                        <Button variant="default" asChild><Link href={item.href}>{item.action}</Link></Button>
-                    </div>
+                {areActivitiesLoading && (
+                  <>
+                    <Skeleton className="h-20 rounded-lg" />
+                    <Skeleton className="h-20 rounded-lg" />
+                    <Skeleton className="h-20 rounded-lg" />
+                    <Skeleton className="h-20 rounded-lg" />
+                  </>
+                )}
+                {!areActivitiesLoading && quickActivities && quickActivities.length > 0 && quickActivities.map(item => (
+                    <Link href={`/activity/${item.id}`} key={item.id} className="block">
+                      <div className="flex items-center justify-between p-4 bg-muted rounded-lg h-full transition-all hover:bg-accent/50 hover:shadow-md">
+                          <div className="flex items-center gap-3">
+                              <div className="text-3xl">{activityIcons[item.type] || activityIcons.default}</div>
+                              <p className="font-semibold">{item.name}</p>
+                          </div>
+                          <Button variant="default">शुरू करें</Button>
+                      </div>
+                    </Link>
                 ))}
+                {!areActivitiesLoading && (!quickActivities || quickActivities.length === 0) && (
+                  <p className="col-span-full text-center text-muted-foreground p-4">अभी कोई त्वरित उपाय उपलब्ध नहीं हैं।</p>
+                )}
             </CardContent>
         </Card>
 
