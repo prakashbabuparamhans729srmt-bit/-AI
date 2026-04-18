@@ -48,7 +48,7 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = userCredential.user;
 
-      // Create a new family and user profile
+      // 1. Create a new family for the new user
       const familiesColRef = collection(firestore, 'families');
       const familyData = {
           familyName: familyName,
@@ -56,36 +56,30 @@ export default function RegisterPage() {
           memberUserIds: [newUser.uid],
           registrationDate: serverTimestamp(),
       };
+      
+      const familyDocRef = await addDocumentNonBlocking(familiesColRef, familyData);
+      if (!familyDocRef) {
+          throw new Error("Family document could not be created.");
+      }
+      const familyId = familyDocRef.id;
 
-      addDocumentNonBlocking(familiesColRef, familyData)
-        .then(familyDocRef => {
-            if (!familyDocRef) {
-                console.error("Failed to create family document.");
-                // Optionally show a toast to the user about the failure
-                return;
-            };
+      // 2. Update the family document with its own ID
+      await updateDocumentNonBlocking(doc(firestore, 'families', familyId), { id: familyId });
 
-            const familyId = familyDocRef.id;
-
-            // Also update the family document with its own ID for easier querying later
-            const familyDocWithIdRef = doc(firestore, 'families', familyId);
-            updateDocumentNonBlocking(familyDocWithIdRef, { id: familyId });
-
-            // Create user profile in Firestore and link it to the family
-            const userDocRef = doc(firestore, 'users', newUser.uid);
-            const userProfile = {
-                id: newUser.uid,
-                familyId: familyId,
-                firstName: firstName,
-                lastName: lastName,
-                dateOfBirth: '', // Placeholder
-                gender: '', // Placeholder
-                email: newUser.email,
-                profileImageUrl: newUser.photoURL || `https://picsum.photos/seed/${newUser.uid}/200/200`
-            };
-            
-            setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
-        });
+      // 3. Create the user profile and link it to the new family
+      const userDocRef = doc(firestore, 'users', newUser.uid);
+      const userProfile = {
+          id: newUser.uid,
+          familyId: familyId,
+          firstName: firstName,
+          lastName: lastName,
+          dateOfBirth: '', // Placeholder
+          gender: '', // Placeholder
+          email: newUser.email,
+          profileImageUrl: newUser.photoURL || `https://picsum.photos/seed/${newUser.uid}/200/200`
+      };
+      
+      await setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
 
       toast({
         title: 'पंजीकरण सफल',
@@ -99,7 +93,7 @@ export default function RegisterPage() {
       toast({
         variant: 'destructive',
         title: 'पंजीकरण विफल',
-        description: authError.message,
+        description: authError.code ? authError.message : (error as Error).message,
       });
     } finally {
       setIsLoading(false);
