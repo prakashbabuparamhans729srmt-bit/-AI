@@ -45,8 +45,7 @@ export default function StoryDetailPage() {
     setIsGeneratingAudio(true);
     setAudioSrc(null);
     try {
-      // Using a smaller part of the story for demo purposes to avoid long generation times and high costs
-      const storyContentForAudio = story.content.substring(0, 1000);
+      const storyContentForAudio = story.content;
       const response = await textToSpeech(storyContentForAudio);
       setAudioSrc(response.audioDataUri);
     } catch (error) {
