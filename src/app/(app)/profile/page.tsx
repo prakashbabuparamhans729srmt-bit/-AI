@@ -15,11 +15,13 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { differenceInYears } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Goal = {
   id: string;
   description: string;
   status: 'Active' | 'Completed';
+  frequency: 'daily' | 'weekly' | 'monthly';
 };
 
 type UserProfile = {
@@ -60,6 +62,7 @@ export default function ProfilePage() {
 
     // State for forms
     const [newGoal, setNewGoal] = useState('');
+    const [newGoalFrequency, setNewGoalFrequency] = useState('daily');
     const [isAddingGoal, setIsAddingGoal] = useState(false);
     const [newFamilyName, setNewFamilyName] = useState('');
     const [isCreatingFamily, setIsCreatingFamily] = useState(false);
@@ -115,6 +118,11 @@ export default function ProfilePage() {
         }, {} as Record<string, Article[]>);
     }, [personalizedArticles]);
     const userAge = userProfile?.dateOfBirth ? calculateAge(userProfile.dateOfBirth) : null;
+    const frequencyMap = {
+        daily: 'दैनिक',
+        weekly: 'साप्ताहिक',
+        monthly: 'मासिक',
+    };
 
     // Handlers
     const handleAddGoal = async (e: React.FormEvent) => {
@@ -128,7 +136,7 @@ export default function ProfilePage() {
             startDate: serverTimestamp(),
             userId: user.uid,
             unit: 'times',
-            frequency: 'daily',
+            frequency: newGoalFrequency,
             targetValue: '1'
         };
 
@@ -139,11 +147,14 @@ export default function ProfilePage() {
             if(docRef) {
                 await updateDocumentNonBlocking(doc(firestore, `users/${user.uid}/goals`, docRef.id), { id: docRef.id });
             }
+            toast({ title: "नया लक्ष्य जोड़ा गया!", });
         } catch(error) {
             console.error("Error adding goal:", error);
+            toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'लक्ष्य जोड़ने में विफल। कृपया पुन: प्रयास करें।' });
         }
 
         setNewGoal('');
+        setNewGoalFrequency('daily');
         setIsAddingGoal(false);
     };
 
@@ -378,7 +389,10 @@ export default function ProfilePage() {
                 <div key={goal.id} className={`flex items-center justify-between p-3 rounded-lg ${goal.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/50' : 'bg-muted'}`}>
                     <div className="flex items-center gap-3">
                         <Target className={`h-5 w-5 ${goal.status === 'Completed' ? 'text-green-600' : 'text-primary'}`}/>
-                        <p className={goal.status === 'Completed' ? 'line-through text-muted-foreground' : ''}>{goal.description}</p>
+                        <p className={goal.status === 'Completed' ? 'line-through text-muted-foreground' : ''}>
+                          {goal.description}
+                          {goal.frequency && <span className="text-xs text-muted-foreground ml-2">({frequencyMap[goal.frequency]})</span>}
+                        </p>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => handleToggleGoalStatus(goal)}>
                         <CheckCircle className={`mr-2 h-4 w-4 ${goal.status === 'Completed' ? 'text-green-600' : ''}`}/>
@@ -389,19 +403,36 @@ export default function ProfilePage() {
              {!areGoalsLoading && goals?.length === 0 && (
                 <p className="text-center text-muted-foreground">आपने अभी तक कोई लक्ष्य नहीं जोड़ा है।</p>
             )}
-            <form onSubmit={handleAddGoal} className="pt-4 space-y-2">
-                 <div className="flex w-full items-center space-x-2">
-                     <Input 
-                        placeholder="एक नया लक्ष्य जोड़ें (जैसे 'प्रतिदिन 10 मिनट ध्यान करूंगा')"
-                        value={newGoal}
-                        onChange={(e) => setNewGoal(e.target.value)}
-                        disabled={isAddingGoal}
-                     />
-                    <Button type="submit" disabled={isAddingGoal || !newGoal.trim()}>
-                        {isAddingGoal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        <span className="hidden sm:inline ml-2">जोड़ें</span>
-                    </Button>
-                 </div>
+            <form onSubmit={handleAddGoal} className="pt-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                    <div className="sm:col-span-2 space-y-1">
+                        <Label htmlFor="goal-description">नए लक्ष्य का विवरण</Label>
+                        <Input 
+                            id="goal-description"
+                            placeholder="जैसे 'प्रतिदिन 10 मिनट ध्यान करूंगा'"
+                            value={newGoal}
+                            onChange={(e) => setNewGoal(e.target.value)}
+                            disabled={isAddingGoal}
+                        />
+                    </div>
+                    <div className='space-y-1'>
+                        <Label htmlFor="goal-frequency">आवृत्ति</Label>
+                        <Select value={newGoalFrequency} onValueChange={(value) => setNewGoalFrequency(value as 'daily' | 'weekly' | 'monthly')} disabled={isAddingGoal}>
+                            <SelectTrigger id="goal-frequency">
+                                <SelectValue placeholder="आवृत्ति" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="daily">दैनिक</SelectItem>
+                                <SelectItem value="weekly">साप्ताहिक</SelectItem>
+                                <SelectItem value="monthly">मासिक</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <Button type="submit" disabled={isAddingGoal || !newGoal.trim()}>
+                    {isAddingGoal ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                    नया लक्ष्य जोड़ें
+                </Button>
             </form>
         </CardContent>
       </Card>
