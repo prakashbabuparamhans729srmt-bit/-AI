@@ -3,9 +3,10 @@
 import { useState, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy, limit, where } from 'firebase/firestore';
 import { CheckCircle, Edit, Target, Plus, Loader2 } from 'lucide-react';
@@ -62,6 +63,8 @@ export default function ProfilePage() {
     const [isAddingGoal, setIsAddingGoal] = useState(false);
     const [newFamilyName, setNewFamilyName] = useState('');
     const [isCreatingFamily, setIsCreatingFamily] = useState(false);
+    const [testimonialQuote, setTestimonialQuote] = useState('');
+    const [isSubmittingTestimonial, setIsSubmittingTestimonial] = useState(false);
 
     // Firestore refs
     const userProfileRef = useMemoFirebase(() => {
@@ -182,6 +185,36 @@ export default function ProfilePage() {
         }
     };
 
+    const handleTestimonialSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!testimonialQuote.trim() || !user || !userProfile) return;
+
+        setIsSubmittingTestimonial(true);
+        try {
+            const testimonialData = {
+                quote: testimonialQuote,
+                authorName: `${userProfile.firstName} ${userProfile.lastName || ''}`.trim(),
+                authorUserId: user.uid,
+                authorLocation: '', // This can be added later if available in profile
+                dateSubmitted: serverTimestamp(),
+                status: 'Pending',
+            };
+            const testimonialsColRef = collection(firestore, 'pending_testimonials');
+            const docRef = await addDocumentNonBlocking(testimonialsColRef, testimonialData);
+            if (docRef) {
+                await updateDocumentNonBlocking(doc(firestore, 'pending_testimonials', docRef.id), { id: docRef.id });
+            }
+            toast({ title: 'प्रतिक्रिया भेजी गई!', description: 'आपकी प्रतिक्रिया समीक्षा के लिए सबमिट कर दी गई है। धन्यवाद!' });
+            setTestimonialQuote('');
+        } catch (error) {
+            console.error("Error submitting testimonial:", error);
+            toast({ variant: 'destructive', title: 'एक त्रुटि हुई', description: 'आपकी प्रतिक्रिया भेजने में विफल। कृपया पुन: प्रयास करें।' });
+        } finally {
+            setIsSubmittingTestimonial(false);
+        }
+    };
+
+
     function calculateAge(dob: string) {
         if (!dob) return null;
         try {
@@ -278,6 +311,28 @@ export default function ProfilePage() {
                 </form>
                 </div>
             )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl">🗣️ अपनी प्रतिक्रिया दें</CardTitle>
+          <CardDescription>क्या आपको ऐप पसंद आया? हमें अपनी कहानी बताएं। आपकी प्रतिक्रिया सार्वजनिक रूप से दिखाई दे सकती है।</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleTestimonialSubmit} className="space-y-4">
+            <Textarea
+              placeholder="यहां अपनी प्रतिक्रिया या कहानी लिखें..."
+              value={testimonialQuote}
+              onChange={(e) => setTestimonialQuote(e.target.value)}
+              disabled={isSubmittingTestimonial}
+              className="min-h-[120px]"
+            />
+            <Button type="submit" disabled={isSubmittingTestimonial || !testimonialQuote.trim()}>
+              {isSubmittingTestimonial && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              प्रतिक्रिया भेजें
+            </Button>
+          </form>
         </CardContent>
       </Card>
 
