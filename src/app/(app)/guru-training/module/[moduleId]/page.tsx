@@ -1,13 +1,15 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, limit } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useFirestore, useDoc, useCollection, useMemoFirebase, useUser, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { doc, collection, query, where, limit, serverTimestamp } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CornerUpLeft, BookOpen, FileText } from 'lucide-react';
+import { Loader2, CornerUpLeft, BookOpen, FileText, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 type TrainingCourse = {
     id: string;
@@ -25,6 +27,14 @@ type KnowledgeArticle = {
     id: string;
     title: string;
     summary: string;
+};
+
+// NEW Type
+type GuruTrainingProgress = {
+    id: string;
+    courseModuleId: string;
+    status: 'Not Started' | 'In Progress' | 'Completed';
+    progressPercentage: number;
 };
 
 // A small component to render each resource article
@@ -53,6 +63,10 @@ export default function ModuleDetailPage() {
   const { moduleId } = useParams() as { moduleId: string };
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
+  const { user } = useUser();
+  const [isCompleting, setIsCompleting] = useState(false);
+
 
   // We need to get the course ID first, assuming there's only one course for now.
   const coursesQuery = useMemoFirebase(() => {
@@ -69,7 +83,59 @@ export default function ModuleDetailPage() {
 
   const { data: module, isLoading: isModuleLoading } = useDoc<CourseModule>(moduleRef);
 
-  const isLoading = isCoursesLoading || isModuleLoading;
+  // NEW: Fetch progress for this specific module
+  const progressQuery = useMemoFirebase(() => {
+    if (!firestore || !user || !moduleId) return null;
+    return query(
+      collection(firestore, `gurus/${user.uid}/trainingProgress`),
+      where('courseModuleId', '==', moduleId),
+      limit(1)
+    );
+  }, [firestore, user, moduleId]);
+  const { data: progressData, isLoading: isProgressLoading } = useCollection<GuruTrainingProgress>(progressQuery);
+  const moduleProgress = progressData?.[0];
+  const isCompleted = moduleProgress?.status === 'Completed';
+
+
+  const isLoading = isCoursesLoading || isModuleLoading || isProgressLoading;
+
+  const handleMarkComplete = async () => {
+    if (!user || !moduleId || !firestore) return;
+    setIsCompleting(true);
+
+    try {
+        if (moduleProgress) {
+            // Update existing progress document
+            const progressRef = doc(firestore, `gurus/${user.uid}/trainingProgress`, moduleProgress.id);
+            await updateDocumentNonBlocking(progressRef, {
+                status: 'Completed',
+                progressPercentage: 100,
+                completionDate: serverTimestamp()
+            });
+        } else {
+            // Create new progress document
+            const progressColRef = collection(firestore, `gurus/${user.uid}/trainingProgress`);
+            const newProgressData = {
+                guruId: user.uid,
+                courseModuleId: moduleId,
+                status: 'Completed' as const,
+                progressPercentage: 100,
+                completionDate: serverTimestamp()
+            };
+            const docRef = await addDocumentNonBlocking(progressColRef, newProgressData);
+            if(docRef) {
+                 await updateDocumentNonBlocking(docRef, { id: docRef.id });
+            }
+        }
+        toast({ title: 'बधाई!', description: `आपने "${module?.name}" मॉड्यूल पूरा कर लिया है।` });
+    } catch(error) {
+        console.error("Error marking module complete:", error);
+        toast({ variant: "destructive", title: "एक त्रुटि हुई", description: "मॉड्यूल पूरा करने में विफल।" });
+    } finally {
+        setIsCompleting(false);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -133,6 +199,21 @@ export default function ModuleDetailPage() {
             </div>
           )}
         </CardContent>
+         <CardFooter className="bg-muted/50 p-6">
+             <Button 
+                size="lg" 
+                onClick={handleMarkComplete}
+                disabled={isCompleting || isCompleted}
+                className="w-full md:w-auto"
+            >
+                {isCompleting ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                )}
+                {isCompleted ? 'मॉड्यूल पूरा हुआ' : 'पूर्ण के रूप में चिह्नित करें'}
+            </Button>
+        </CardFooter>
       </Card>
     </div>
   );

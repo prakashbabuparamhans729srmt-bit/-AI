@@ -48,6 +48,14 @@ type CommunityEvent = {
     attendeeCount?: number;
 };
 
+// New Type for training progress
+type GuruTrainingProgress = {
+    id: string;
+    courseModuleId: string;
+    status: 'Not Started' | 'In Progress' | 'Completed';
+    progressPercentage: number;
+};
+
 
 export default function GuruTrainingPage() {
     const firestore = useFirestore();
@@ -86,6 +94,19 @@ export default function GuruTrainingPage() {
         return query(collection(firestore, `trainingCourses/${course.id}/modules`), orderBy('name', 'asc'));
     }, [firestore, course]);
     const { data: modules, isLoading: modulesLoading } = useCollection<CourseModule>(modulesQuery);
+
+    // NEW: Fetch training progress
+    const trainingProgressQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return query(collection(firestore, `gurus/${user.uid}/trainingProgress`));
+    }, [firestore, user]);
+    const { data: trainingProgress, isLoading: progressLoading } = useCollection<GuruTrainingProgress>(trainingProgressQuery);
+
+    // NEW: Create a map for easy progress lookup
+    const progressMap = useMemo(() => {
+        if (!trainingProgress) return new Map<string, GuruTrainingProgress>();
+        return new Map(trainingProgress.map(p => [p.courseModuleId, p]));
+    }, [trainingProgress]);
 
 
     const gurusQuery = useMemoFirebase(() => {
@@ -177,7 +198,7 @@ export default function GuruTrainingPage() {
         }
     };
     
-    const curriculumLoading = coursesLoading || modulesLoading;
+    const curriculumLoading = coursesLoading || modulesLoading || progressLoading;
 
     if (isUserLoading || isGuruProfileLoading || isUserProfileLoading) {
         return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -235,16 +256,16 @@ export default function GuruTrainingPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">📚 {curriculumLoading ? 'पाठ्यक्रम लोड हो रहा है...' : course?.name || 'गुरु प्रशिक्षण पाठ्यक्रम'}</CardTitle>
+                    <CardTitle className="font-headline">📚 {coursesLoading ? 'पाठ्यक्रम लोड हो रहा है...' : course?.name || 'गुरु प्रशिक्षण पाठ्यक्रम'}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {curriculumLoading && <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}
                     {!curriculumLoading && (!modules || modules.length === 0) && <p className="p-6 text-muted-foreground text-center">अभी कोई पाठ्यक्रम मॉड्यूल उपलब्ध नहीं है।</p>}
                     
-                    {modules && modules.map((item, index) => {
-                        // Using index for mock progress data
-                        const progress = Math.max(20, 100 - index * 35);
-                        const isCompleted = progress === 100;
+                    {modules && modules.map((item) => {
+                        const moduleProgress = progressMap.get(item.id);
+                        const progress = moduleProgress?.progressPercentage ?? 0;
+                        const isCompleted = moduleProgress?.status === 'Completed';
                         const status = isCompleted ? 'प्रमाणपत्र' : 'जारी रखें';
 
                         return (
