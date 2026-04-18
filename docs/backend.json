@@ -1,200 +1,61 @@
 {
   "entities": {
-    "Family": {
+    "Activity": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Family",
+      "title": "Activity",
       "type": "object",
-      "description": "Represents a family unit in the app, allowing multiple members to be linked and share resources.",
+      "description": "Structured activities for individuals or families, including games, exercises, and guided practices related to spiritual and ethical development.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Family entity."
+          "description": "Unique identifier for the Activity entity."
         },
-        "familyName": {
+        "name": {
           "type": "string",
-          "description": "The name of the family unit, e.g., 'Sharma Parivar'."
+          "description": "The name of the activity (e.g., 'Family Meditation', 'Ethics Puzzle', 'Coloring Page')."
         },
-        "headOfFamilyUserId": {
+        "description": {
           "type": "string",
-          "description": "Reference to the UserProfile who is designated as the head of the family. (Relationship: UserProfile 1:N Family)"
+          "description": "A detailed description of the activity and its purpose."
         },
-        "memberUserIds": {
+        "type": {
+          "type": "string",
+          "description": "The category or type of activity (e.g., 'Meditation', 'Yoga', 'Puzzle', 'Coloring', 'Chanting')."
+        },
+        "targetAgeGroup": {
+          "type": "string",
+          "description": "The target age group for the activity (e.g., 'All', 'Children', 'Adults')."
+        },
+        "estimatedDurationMinutes": {
+          "type": "number",
+          "description": "The estimated time required to complete the activity, in minutes."
+        },
+        "materialsNeeded": {
           "type": "array",
-          "description": "References to UserProfiles belonging to this family. (Relationship: Family N:N UserProfile)",
+          "description": "A list of materials or resources required for the activity.",
           "items": {
             "type": "string"
           }
         },
-        "registrationDate": {
-          "type": "string",
-          "description": "The date and time when the family unit was registered.",
-          "format": "date-time"
-        },
-        "languagePreferences": {
+        "religionIds": {
           "type": "array",
-          "description": "A list of preferred languages for family-wide content and interactions.",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "familyName",
-        "headOfFamilyUserId",
-        "registrationDate"
-      ]
-    },
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
-      "type": "object",
-      "description": "Represents an individual user's profile, containing personal details, preferences, and links to family if applicable.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserProfile entity."
-        },
-        "familyId": {
-          "type": "string",
-          "description": "Reference to the Family this user belongs to, if any. (Relationship: Family 1:N UserProfile)"
-        },
-        "firstName": {
-          "type": "string",
-          "description": "The user's first name."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "The user's last name."
-        },
-        "dateOfBirth": {
-          "type": "string",
-          "description": "The user's date of birth.",
-          "format": "date"
-        },
-        "gender": {
-          "type": "string",
-          "description": "The user's gender."
-        },
-        "roleInFamily": {
-          "type": "string",
-          "description": "The user's role within their family (e.g., 'पिता', 'माता', 'पुत्र', 'पुत्री')."
-        },
-        "spiritualInterestIds": {
-          "type": "array",
-          "description": "References to Religions representing the user's spiritual interests. (Relationship: UserProfile N:N Religion)",
+          "description": "References to Religions that this activity is relevant to. (Relationship: Activity N:N Religion)",
           "items": {
             "type": "string"
           }
         },
-        "generalInterests": {
-          "type": "array",
-          "description": "A list of general interests of the user (e.g., 'Physics', 'Astronomy', 'Cricket').",
-          "items": {
-            "type": "string"
-          }
-        },
-        "educationLevel": {
+        "instructionUrl": {
           "type": "string",
-          "description": "The user's current education level or highest attained (e.g., '11th Grade', 'Graduate')."
-        },
-        "religiousAffiliationId": {
-          "type": "string",
-          "description": "Reference to the primary Religion the user identifies with. (Relationship: Religion 1:N UserProfile)"
-        },
-        "profileImageUrl": {
-          "type": "string",
-          "description": "URL to the user's profile image.",
+          "description": "URL to detailed instructions, a guide, or a video for the activity.",
           "format": "uri"
         }
       },
       "required": [
         "id",
-        "firstName",
-        "lastName",
-        "dateOfBirth",
-        "gender"
-      ]
-    },
-    "Conversation": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Conversation",
-      "type": "object",
-      "description": "Stores a thread of communication between a user (or family) and the AI or a human Guru.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Conversation entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who initiated or is participating in this conversation. (Relationship: UserProfile 1:N Conversation)"
-        },
-        "startedAt": {
-          "type": "string",
-          "description": "The date and time when the conversation was initiated.",
-          "format": "date-time"
-        },
-        "lastUpdatedAt": {
-          "type": "string",
-          "description": "The date and time when the last message was added to the conversation.",
-          "format": "date-time"
-        },
-        "type": {
-          "type": "string",
-          "description": "The type of conversation (e.g., 'AI Guidance', 'Crisis Counseling', 'General Query')."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the conversation (e.g., 'Open', 'Closed', 'Pending Guru Review')."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "startedAt",
+        "name",
+        "description",
         "type",
-        "status"
-      ]
-    },
-    "Message": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Message",
-      "type": "object",
-      "description": "An individual message within a conversation thread.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Message entity."
-        },
-        "conversationId": {
-          "type": "string",
-          "description": "Reference to the Conversation this message belongs to. (Relationship: Conversation 1:N Message)"
-        },
-        "senderType": {
-          "type": "string",
-          "description": "The type of sender (e.g., 'User', 'AI', 'Guru')."
-        },
-        "senderId": {
-          "type": "string",
-          "description": "Reference to the UserProfile or Guru who sent the message. This can be null if the sender is 'AI'. (Relationship: UserProfile 1:N Message, Guru 1:N Message)"
-        },
-        "content": {
-          "type": "string",
-          "description": "The actual text content of the message."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "The date and time when the message was sent.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "conversationId",
-        "senderType",
-        "content",
-        "timestamp"
+        "estimatedDurationMinutes"
       ]
     },
     "ChatChannel": {
@@ -263,505 +124,6 @@
         "senderId",
         "content",
         "timestamp"
-      ]
-    },
-    "KnowledgeArticle": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "KnowledgeArticle",
-      "type": "object",
-      "description": "Contains informational content related to spirituality, ethics, science, and cultural practices, suitable for various audiences.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the KnowledgeArticle entity."
-        },
-        "title": {
-          "type": "string",
-          "description": "The title of the knowledge article."
-        },
-        "summary": {
-          "type": "string",
-          "description": "A brief summary of the article's content."
-        },
-        "fullContent": {
-          "type": "string",
-          "description": "The complete content of the article, possibly in rich text or markdown format."
-        },
-        "religionIds": {
-          "type": "array",
-          "description": "References to Religions relevant to this article. (Relationship: KnowledgeArticle N:N Religion)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "topicTags": {
-          "type": "array",
-          "description": "A list of relevant keywords or concepts (e.g., 'sin', 'karma', 'Big Bang').",
-          "items": {
-            "type": "string"
-          }
-        },
-        "category": {
-          "type": "string",
-          "description": "The category of the article (e.g., 'Science and Religion', 'Teen Psychology', 'Career Guidance')."
-        },
-        "targetAudiences": {
-          "type": "array",
-          "description": "A list of intended audience groups (e.g., 'Children', 'Teenagers', 'Parents', 'Gurus').",
-          "items": {
-            "type": "string"
-          }
-        },
-        "mediaUrls": {
-          "type": "array",
-          "description": "URLs to associated images, videos, or audio files.",
-          "format": "uri",
-          "items": {
-            "type": "string"
-          }
-        },
-        "publicationDate": {
-          "type": "string",
-          "description": "The date and time when the article was published.",
-          "format": "date-time"
-        },
-        "author": {
-          "type": "string",
-          "description": "The author or source of the article (e.g., 'Swami Ramdev')."
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "summary",
-        "fullContent",
-        "publicationDate"
-      ]
-    },
-    "Religion": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Religion",
-      "type": "object",
-      "description": "Represents a distinct religious or philosophical tradition supported by the app, providing metadata and symbols.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Religion entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the religion (e.g., 'Hinduism', 'Islam', 'Christianity')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief description of the religion."
-        },
-        "symbolUrl": {
-          "type": "string",
-          "description": "URL to an icon or symbol representing the religion (e.g., 'Om', 'Crescent', 'Cross').",
-          "format": "uri"
-        },
-        "keyBeliefs": {
-          "type": "array",
-          "description": "A list of core beliefs or tenets of the religion.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "keyTexts": {
-          "type": "array",
-          "description": "A list of important scriptures or texts associated with the religion (e.g., 'Bhagavad Gita', 'Quran').",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "symbolUrl"
-      ]
-    },
-    "DailyWisdom": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "DailyWisdom",
-      "type": "object",
-      "description": "Daily thoughts, spiritual affirmations, or inspiring quotes provided by the AI.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the DailyWisdom entity."
-        },
-        "quote": {
-          "type": "string",
-          "description": "The text of the daily wisdom quote or thought."
-        },
-        "source": {
-          "type": "string",
-          "description": "The source of the quote (e.g., 'Srimad Bhagavad Gita', 'Unknown')."
-        },
-        "theme": {
-          "type": "string",
-          "description": "The primary theme of the wisdom (e.g., 'Karma', 'Peace', 'Love')."
-        },
-        "religionIds": {
-          "type": "array",
-          "description": "References to Religions that align with this wisdom. (Relationship: DailyWisdom N:N Religion)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "targetAudience": {
-          "type": "string",
-          "description": "The intended audience for this wisdom (e.g., 'All', 'Children', 'Gurus')."
-        },
-        "datePublished": {
-          "type": "string",
-          "description": "The date for which this daily wisdom is scheduled to be displayed.",
-          "format": "date"
-        }
-      },
-      "required": [
-        "id",
-        "quote",
-        "source",
-        "theme",
-        "datePublished"
-      ]
-    },
-    "Story": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Story",
-      "type": "object",
-      "description": "Educational or moral stories, particularly curated for children of different age groups.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Story entity."
-        },
-        "title": {
-          "type": "string",
-          "description": "The title of the story."
-        },
-        "content": {
-          "type": "string",
-          "description": "The full narrative content of the story, possibly in rich text or markdown."
-        },
-        "ageGroup": {
-          "type": "string",
-          "description": "The target age group for the story (e.g., '3-5 years', '6-8 years', '9-12 years')."
-        },
-        "moralLesson": {
-          "type": "string",
-          "description": "The underlying moral or ethical lesson conveyed by the story."
-        },
-        "religionIds": {
-          "type": "array",
-          "description": "References to Religions whose teachings align with the story. (Relationship: Story N:N Religion)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "mediaUrls": {
-          "type": "array",
-          "description": "URLs to associated audio, video, or image files for the story.",
-          "format": "uri",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "content",
-        "ageGroup",
-        "moralLesson"
-      ]
-    },
-    "Activity": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Activity",
-      "type": "object",
-      "description": "Structured activities for individuals or families, including games, exercises, and guided practices related to spiritual and ethical development.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Activity entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the activity (e.g., 'Family Meditation', 'Ethics Puzzle', 'Coloring Page')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the activity and its purpose."
-        },
-        "type": {
-          "type": "string",
-          "description": "The category or type of activity (e.g., 'Meditation', 'Yoga', 'Puzzle', 'Coloring', 'Chanting')."
-        },
-        "targetAgeGroup": {
-          "type": "string",
-          "description": "The target age group for the activity (e.g., 'All', 'Children', 'Adults')."
-        },
-        "estimatedDurationMinutes": {
-          "type": "number",
-          "description": "The estimated time required to complete the activity, in minutes."
-        },
-        "materialsNeeded": {
-          "type": "array",
-          "description": "A list of materials or resources required for the activity.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "religionIds": {
-          "type": "array",
-          "description": "References to Religions that this activity is relevant to. (Relationship: Activity N:N Religion)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "instructionUrl": {
-          "type": "string",
-          "description": "URL to detailed instructions, a guide, or a video for the activity.",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "type",
-        "estimatedDurationMinutes"
-      ]
-    },
-    "Goal": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Goal",
-      "type": "object",
-      "description": "Tracks personal or family goals related to spiritual practice, well-being, or learning within the app.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Goal entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the UserProfile for whom this goal is set. (Relationship: UserProfile 1:N Goal)"
-        },
-        "familyId": {
-          "type": "string",
-          "description": "Reference to the Family for whom this goal is set, if it's a family-wide goal. (Relationship: Family 1:N Goal)"
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the goal (e.g., 'Meditate 10 minutes daily')."
-        },
-        "targetValue": {
-          "type": "string",
-          "description": "The target quantity or benchmark for the goal (e.g., '10 minutes', 'one article')."
-        },
-        "unit": {
-          "type": "string",
-          "description": "The unit of measurement for the target value (e.g., 'minutes', 'article', 'times')."
-        },
-        "frequency": {
-          "type": "string",
-          "description": "How often the goal should be pursued (e.g., 'daily', 'weekly', 'monthly')."
-        },
-        "startDate": {
-          "type": "string",
-          "description": "The date when the goal started.",
-          "format": "date"
-        },
-        "endDate": {
-          "type": "string",
-          "description": "The optional end date for the goal.",
-          "format": "date"
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the goal (e.g., 'Active', 'Completed', 'Paused')."
-        },
-        "progressRecords": {
-          "type": "array",
-          "description": "A list of progress records, each containing a date and the achieved value for that period.",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "description",
-        "targetValue",
-        "unit",
-        "frequency",
-        "startDate",
-        "status"
-      ]
-    },
-    "ForumTopic": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ForumTopic",
-      "type": "object",
-      "description": "Represents a discussion topic or thread in the community forum.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ForumTopic entity."
-        },
-        "title": {
-          "type": "string",
-          "description": "The title of the forum topic."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief description or the initial question of the topic."
-        },
-        "creatorUserId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who created this topic. (Relationship: UserProfile 1:N ForumTopic)"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "The date and time when the topic was created.",
-          "format": "date-time"
-        },
-        "lastPostAt": {
-          "type": "string",
-          "description": "The date and time of the most recent post in this topic.",
-          "format": "date-time"
-        },
-        "tags": {
-          "type": "array",
-          "description": "A list of tags or keywords associated with the topic.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "totalPosts": {
-          "type": "number",
-          "description": "The total number of posts in this topic (excluding comments)."
-        },
-        "totalComments": {
-          "type": "number",
-          "description": "The total number of comments across all posts in this topic."
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "creatorUserId",
-        "createdAt"
-      ]
-    },
-    "ForumPost": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ForumPost",
-      "type": "object",
-      "description": "A primary post within a community forum topic, which can receive comments and reactions.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ForumPost entity."
-        },
-        "forumTopicId": {
-          "type": "string",
-          "description": "Reference to the ForumTopic this post belongs to. (Relationship: ForumTopic 1:N ForumPost)"
-        },
-        "authorUserId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who authored this post. (Relationship: UserProfile 1:N ForumPost)"
-        },
-        "content": {
-          "type": "string",
-          "description": "The full content of the forum post, possibly in rich text or markdown."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "The date and time when the post was created.",
-          "format": "date-time"
-        },
-        "likes": {
-          "type": "number",
-          "description": "The number of likes received by this post."
-        },
-        "likedBy": {
-          "type": "array",
-          "description": "Array of user IDs who have liked this post.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "emotionalReactions": {
-          "type": "array",
-          "description": "An object detailing various emotional reactions and their counts for the post.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "isBestPostOfTheWeek": {
-          "type": "boolean",
-          "description": "Indicates if this post has been highlighted as the best post of the week."
-        }
-      },
-      "required": [
-        "id",
-        "forumTopicId",
-        "authorUserId",
-        "content",
-        "createdAt"
-      ]
-    },
-    "ForumComment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ForumComment",
-      "type": "object",
-      "description": "A comment made on a specific forum post.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ForumComment entity."
-        },
-        "forumPostId": {
-          "type": "string",
-          "description": "Reference to the ForumPost this comment is attached to. (Relationship: ForumPost 1:N ForumComment)"
-        },
-        "authorUserId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who authored this comment. (Relationship: UserProfile 1:N ForumComment)"
-        },
-        "content": {
-          "type": "string",
-          "description": "The text content of the comment."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "The date and time when the comment was created.",
-          "format": "date-time"
-        },
-        "likes": {
-          "type": "number",
-          "description": "The number of likes received by this comment."
-        },
-        "likedBy": {
-          "type": "array",
-          "description": "Array of user IDs who have liked this comment.",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "forumPostId",
-        "authorUserId",
-        "content",
-        "createdAt"
       ]
     },
     "CommunityEvent": {
@@ -841,105 +203,45 @@
         "location"
       ]
     },
-    "Guru": {
+    "Conversation": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Guru",
+      "title": "Conversation",
       "type": "object",
-      "description": "Represents a certified human 'Kulaguru' who provides specialized guidance and potentially manages multiple families.",
+      "description": "Stores a thread of communication between a user (or family) and the AI or a human Guru.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Guru entity."
+          "description": "Unique identifier for the Conversation entity."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the UserProfile of the individual who is a Guru. (Relationship: UserProfile 1:N Guru)"
+          "description": "Reference to the UserProfile who initiated or is participating in this conversation. (Relationship: UserProfile 1:N Conversation)"
         },
-        "specializations": {
-          "type": "array",
-          "description": "A list of areas of expertise or specialization (e.g., 'Family Counseling', 'Crisis Management').",
-          "items": {
-            "type": "string"
-          }
-        },
-        "languageSkills": {
-          "type": "array",
-          "description": "A list of languages the Guru is proficient in for counseling.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "certifiedCourseModuleIds": {
-          "type": "array",
-          "description": "References to CourseModules for which the Guru is certified. (Relationship: Guru N:N CourseModule)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "overallRating": {
-          "type": "number",
-          "description": "The average rating received by the Guru from users, on a scale."
-        },
-        "familiesManagedCount": {
-          "type": "number",
-          "description": "The number of families currently being managed or counseled by this Guru."
-        },
-        "city": {
+        "startedAt": {
           "type": "string",
-          "description": "The city where the Guru is located, for geographical search."
+          "description": "The date and time when the conversation was initiated.",
+          "format": "date-time"
         },
-        "isApproved": {
-          "type": "boolean",
-          "description": "Indicates if the Guru's profile and certification are approved by the platform."
+        "lastUpdatedAt": {
+          "type": "string",
+          "description": "The date and time when the last message was added to the conversation.",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of conversation (e.g., 'AI Guidance', 'Crisis Counseling', 'General Query')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the conversation (e.g., 'Open', 'Closed', 'Pending Guru Review')."
         }
       },
       "required": [
         "id",
         "userId",
-        "specializations",
-        "languageSkills",
-        "isApproved"
-      ]
-    },
-    "TrainingCourse": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "TrainingCourse",
-      "type": "object",
-      "description": "Defines a structured curriculum for Guru training and certification.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the TrainingCourse entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the training course (e.g., 'Guru Certification Program')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the course content and objectives."
-        },
-        "durationYears": {
-          "type": "number",
-          "description": "The total duration of the course in years."
-        },
-        "targetAudience": {
-          "type": "string",
-          "description": "The intended audience for the course (e.g., 'Aspiring Gurus', 'Experienced Counselors')."
-        },
-        "courseModuleIds": {
-          "type": "array",
-          "description": "References to CourseModules that constitute this training course. (Relationship: TrainingCourse N:N CourseModule)",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "durationYears"
+        "startedAt",
+        "type",
+        "status"
       ]
     },
     "CourseModule": {
@@ -979,95 +281,6 @@
         "id",
         "name",
         "description"
-      ]
-    },
-    "Festival": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Festival",
-      "type": "object",
-      "description": "Information about religious festivals across different faiths, including their significance and timing.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Festival entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the festival."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief explanation of the festival's history and significance."
-        },
-        "date": {
-          "type": "string",
-          "description": "The primary date of the festival (may vary by year or calculation).",
-          "format": "date"
-        },
-        "religionIds": {
-          "type": "array",
-          "description": "References to Religions that observe this festival. (Relationship: Festival N:N Religion)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "suggestedActivityIds": {
-          "type": "array",
-          "description": "References to Activities that are suggested for this festival. (Relationship: Festival N:N Activity)",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "date"
-      ]
-    },
-    "Testimonial": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Testimonial",
-      "type": "object",
-      "description": "User feedback or success stories displayed on the landing page or other promotional sections.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Testimonial entity."
-        },
-        "quote": {
-          "type": "string",
-          "description": "The actual testimonial quote from the user."
-        },
-        "authorName": {
-          "type": "string",
-          "description": "The name of the author of the testimonial (e.g., 'Priya, Delhi')."
-        },
-        "authorUserId": {
-          "type": "string",
-          "description": "Optional reference to the UserProfile who provided the testimonial. (Relationship: UserProfile 1:N Testimonial)"
-        },
-        "authorLocation": {
-          "type": "string",
-          "description": "The location of the testimonial author (e.g., 'Delhi')."
-        },
-        "dateSubmitted": {
-          "type": "string",
-          "description": "The date and time when the testimonial was submitted.",
-          "format": "date-time"
-        },
-        "status": {
-          "type": "string",
-          "description": "The moderation status of the testimonial (e.g., 'Approved', 'Pending', 'Rejected')."
-        }
-      },
-      "required": [
-        "id",
-        "quote",
-        "authorName",
-        "dateSubmitted",
-        "status"
       ]
     },
     "CrisisCounselingTopic": {
@@ -1154,6 +367,429 @@
         "guidanceText"
       ]
     },
+    "DailyWisdom": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DailyWisdom",
+      "type": "object",
+      "description": "Daily thoughts, spiritual affirmations, or inspiring quotes provided by the AI.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DailyWisdom entity."
+        },
+        "quote": {
+          "type": "string",
+          "description": "The text of the daily wisdom quote or thought."
+        },
+        "source": {
+          "type": "string",
+          "description": "The source of the quote (e.g., 'Srimad Bhagavad Gita', 'Unknown')."
+        },
+        "theme": {
+          "type": "string",
+          "description": "The primary theme of the wisdom (e.g., 'Karma', 'Peace', 'Love')."
+        },
+        "religionIds": {
+          "type": "array",
+          "description": "References to Religions that align with this wisdom. (Relationship: DailyWisdom N:N Religion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "targetAudience": {
+          "type": "string",
+          "description": "The intended audience for this wisdom (e.g., 'All', 'Children', 'Gurus')."
+        },
+        "datePublished": {
+          "type": "string",
+          "description": "The date for which this daily wisdom is scheduled to be displayed.",
+          "format": "date"
+        }
+      },
+      "required": [
+        "id",
+        "quote",
+        "source",
+        "theme",
+        "datePublished"
+      ]
+    },
+    "Family": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Family",
+      "type": "object",
+      "description": "Represents a family unit in the app, allowing multiple members to be linked and share resources.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Family entity."
+        },
+        "familyName": {
+          "type": "string",
+          "description": "The name of the family unit, e.g., 'Sharma Parivar'."
+        },
+        "headOfFamilyUserId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who is designated as the head of the family. (Relationship: UserProfile 1:N Family)"
+        },
+        "memberUserIds": {
+          "type": "array",
+          "description": "References to UserProfiles belonging to this family. (Relationship: Family N:N UserProfile)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "The date and time when the family unit was registered.",
+          "format": "date-time"
+        },
+        "languagePreferences": {
+          "type": "array",
+          "description": "A list of preferred languages for family-wide content and interactions.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "familyName",
+        "headOfFamilyUserId",
+        "registrationDate"
+      ]
+    },
+    "Festival": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Festival",
+      "type": "object",
+      "description": "Information about religious festivals across different faiths, including their significance and timing.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Festival entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the festival."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief explanation of the festival's history and significance."
+        },
+        "date": {
+          "type": "string",
+          "description": "The primary date of the festival (may vary by year or calculation).",
+          "format": "date"
+        },
+        "religionIds": {
+          "type": "array",
+          "description": "References to Religions that observe this festival. (Relationship: Festival N:N Religion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "suggestedActivityIds": {
+          "type": "array",
+          "description": "References to Activities that are suggested for this festival. (Relationship: Festival N:N Activity)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "date"
+      ]
+    },
+    "ForumComment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ForumComment",
+      "type": "object",
+      "description": "A comment made on a specific forum post.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ForumComment entity."
+        },
+        "forumPostId": {
+          "type": "string",
+          "description": "Reference to the ForumPost this comment is attached to. (Relationship: ForumPost 1:N ForumComment)"
+        },
+        "authorUserId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who authored this comment. (Relationship: UserProfile 1:N ForumComment)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the comment."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the comment was created.",
+          "format": "date-time"
+        },
+        "likes": {
+          "type": "number",
+          "description": "The number of likes received by this comment."
+        },
+        "likedBy": {
+          "type": "array",
+          "description": "Array of user IDs who have liked this comment.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "forumPostId",
+        "authorUserId",
+        "content",
+        "createdAt"
+      ]
+    },
+    "ForumPost": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ForumPost",
+      "type": "object",
+      "description": "A primary post within a community forum topic, which can receive comments and reactions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ForumPost entity."
+        },
+        "forumTopicId": {
+          "type": "string",
+          "description": "Reference to the ForumTopic this post belongs to. (Relationship: ForumTopic 1:N ForumPost)"
+        },
+        "authorUserId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who authored this post. (Relationship: UserProfile 1:N ForumPost)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The full content of the forum post, possibly in rich text or markdown."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the post was created.",
+          "format": "date-time"
+        },
+        "likes": {
+          "type": "number",
+          "description": "The number of likes received by this post."
+        },
+        "likedBy": {
+          "type": "array",
+          "description": "Array of user IDs who have liked this post.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "emotionalReactions": {
+          "type": "array",
+          "description": "An object detailing various emotional reactions and their counts for the post.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isBestPostOfTheWeek": {
+          "type": "boolean",
+          "description": "Indicates if this post has been highlighted as the best post of the week."
+        }
+      },
+      "required": [
+        "id",
+        "forumTopicId",
+        "authorUserId",
+        "content",
+        "createdAt"
+      ]
+    },
+    "ForumTopic": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ForumTopic",
+      "type": "object",
+      "description": "Represents a discussion topic or thread in the community forum.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ForumTopic entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the forum topic."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description or the initial question of the topic."
+        },
+        "creatorUserId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who created this topic. (Relationship: UserProfile 1:N ForumTopic)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time when the topic was created.",
+          "format": "date-time"
+        },
+        "lastPostAt": {
+          "type": "string",
+          "description": "The date and time of the most recent post in this topic.",
+          "format": "date-time"
+        },
+        "tags": {
+          "type": "array",
+          "description": "A list of tags or keywords associated with the topic.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "totalPosts": {
+          "type": "number",
+          "description": "The total number of posts in this topic (excluding comments)."
+        },
+        "totalComments": {
+          "type": "number",
+          "description": "The total number of comments across all posts in this topic."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "creatorUserId",
+        "createdAt"
+      ]
+    },
+    "Goal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Goal",
+      "type": "object",
+      "description": "Tracks personal or family goals related to spiritual practice, well-being, or learning within the app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Goal entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile for whom this goal is set. (Relationship: UserProfile 1:N Goal)"
+        },
+        "familyId": {
+          "type": "string",
+          "description": "Reference to the Family for whom this goal is set, if it's a family-wide goal. (Relationship: Family 1:N Goal)"
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the goal (e.g., 'Meditate 10 minutes daily')."
+        },
+        "targetValue": {
+          "type": "string",
+          "description": "The target quantity or benchmark for the goal (e.g., '10 minutes', 'one article')."
+        },
+        "unit": {
+          "type": "string",
+          "description": "The unit of measurement for the target value (e.g., 'minutes', 'article', 'times')."
+        },
+        "frequency": {
+          "type": "string",
+          "description": "How often the goal should be pursued (e.g., 'daily', 'weekly', 'monthly')."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date when the goal started.",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The optional end date for the goal.",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the goal (e.g., 'Active', 'Completed', 'Paused')."
+        },
+        "progressRecords": {
+          "type": "array",
+          "description": "A list of progress records, each containing a date and the achieved value for that period.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "targetValue",
+        "unit",
+        "frequency",
+        "startDate",
+        "status"
+      ]
+    },
+    "Guru": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Guru",
+      "type": "object",
+      "description": "Represents a certified human 'Kulaguru' who provides specialized guidance and potentially manages multiple families.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Guru entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile of the individual who is a Guru. (Relationship: UserProfile 1:N Guru)"
+        },
+        "specializations": {
+          "type": "array",
+          "description": "A list of areas of expertise or specialization (e.g., 'Family Counseling', 'Crisis Management').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "languageSkills": {
+          "type": "array",
+          "description": "A list of languages the Guru is proficient in for counseling.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "certifiedCourseModuleIds": {
+          "type": "array",
+          "description": "References to CourseModules for which the Guru is certified. (Relationship: Guru N:N CourseModule)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "overallRating": {
+          "type": "number",
+          "description": "The average rating received by the Guru from users, on a scale."
+        },
+        "familiesManagedCount": {
+          "type": "number",
+          "description": "The number of families currently being managed or counseled by this Guru."
+        },
+        "city": {
+          "type": "string",
+          "description": "The city where the Guru is located, for geographical search."
+        },
+        "isApproved": {
+          "type": "boolean",
+          "description": "Indicates if the Guru's profile and certification are approved by the platform."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "specializations",
+        "languageSkills",
+        "isApproved"
+      ]
+    },
     "GuruTrainingProgress": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "GuruTrainingProgress",
@@ -1192,6 +828,471 @@
         "courseModuleId",
         "status",
         "progressPercentage"
+      ]
+    },
+    "Invoice": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Invoice",
+      "type": "object",
+      "description": "Represents a billing invoice for a user's subscription.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Invoice."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile this invoice belongs to."
+        },
+        "subscriptionId": {
+          "type": "string",
+          "description": "Reference to the Subscription this invoice is for."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the invoice was generated."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The total amount of the invoice."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency of the invoice (e.g., 'INR', 'USD')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the invoice (e.g., 'paid', 'open', 'failed')."
+        },
+        "invoiceUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to a downloadable PDF of the invoice."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "subscriptionId",
+        "date",
+        "amount",
+        "currency",
+        "status"
+      ]
+    },
+    "KnowledgeArticle": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "KnowledgeArticle",
+      "type": "object",
+      "description": "Contains informational content related to spirituality, ethics, science, and cultural practices, suitable for various audiences.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the KnowledgeArticle entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the knowledge article."
+        },
+        "summary": {
+          "type": "string",
+          "description": "A brief summary of the article's content."
+        },
+        "fullContent": {
+          "type": "string",
+          "description": "The complete content of the article, possibly in rich text or markdown format."
+        },
+        "religionIds": {
+          "type": "array",
+          "description": "References to Religions relevant to this article. (Relationship: KnowledgeArticle N:N Religion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "topicTags": {
+          "type": "array",
+          "description": "A list of relevant keywords or concepts (e.g., 'sin', 'karma', 'Big Bang').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the article (e.g., 'Science and Religion', 'Teen Psychology', 'Career Guidance')."
+        },
+        "targetAudiences": {
+          "type": "array",
+          "description": "A list of intended audience groups (e.g., 'Children', 'Teenagers', 'Parents', 'Gurus').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mediaUrls": {
+          "type": "array",
+          "description": "URLs to associated images, videos, or audio files.",
+          "format": "uri",
+          "items": {
+            "type": "string"
+          }
+        },
+        "publicationDate": {
+          "type": "string",
+          "description": "The date and time when the article was published.",
+          "format": "date-time"
+        },
+        "author": {
+          "type": "string",
+          "description": "The author or source of the article (e.g., 'Swami Ramdev')."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "summary",
+        "fullContent",
+        "publicationDate"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "An individual message within a conversation thread.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Message entity."
+        },
+        "conversationId": {
+          "type": "string",
+          "description": "Reference to the Conversation this message belongs to. (Relationship: Conversation 1:N Message)"
+        },
+        "senderType": {
+          "type": "string",
+          "description": "The type of sender (e.g., 'User', 'AI', 'Guru')."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to the UserProfile or Guru who sent the message. This can be null if the sender is 'AI'. (Relationship: UserProfile 1:N Message, Guru 1:N Message)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The actual text content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "conversationId",
+        "senderType",
+        "content",
+        "timestamp"
+      ]
+    },
+    "Religion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Religion",
+      "type": "object",
+      "description": "Represents a distinct religious or philosophical tradition supported by the app, providing metadata and symbols.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Religion entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the religion (e.g., 'Hinduism', 'Islam', 'Christianity')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the religion."
+        },
+        "symbolUrl": {
+          "type": "string",
+          "description": "URL to an icon or symbol representing the religion (e.g., 'Om', 'Crescent', 'Cross').",
+          "format": "uri"
+        },
+        "keyBeliefs": {
+          "type": "array",
+          "description": "A list of core beliefs or tenets of the religion.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "keyTexts": {
+          "type": "array",
+          "description": "A list of important scriptures or texts associated with the religion (e.g., 'Bhagavad Gita', 'Quran').",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "symbolUrl"
+      ]
+    },
+    "Story": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Story",
+      "type": "object",
+      "description": "Educational or moral stories, particularly curated for children of different age groups.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Story entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the story."
+        },
+        "content": {
+          "type": "string",
+          "description": "The full narrative content of the story, possibly in rich text or markdown."
+        },
+        "ageGroup": {
+          "type": "string",
+          "description": "The target age group for the story (e.g., '3-5 years', '6-8 years', '9-12 years')."
+        },
+        "moralLesson": {
+          "type": "string",
+          "description": "The underlying moral or ethical lesson conveyed by the story."
+        },
+        "religionIds": {
+          "type": "array",
+          "description": "References to Religions whose teachings align with the story. (Relationship: Story N:N Religion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mediaUrls": {
+          "type": "array",
+          "description": "URLs to associated audio, video, or image files for the story.",
+          "format": "uri",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "ageGroup",
+        "moralLesson"
+      ]
+    },
+    "Subscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subscription",
+      "type": "object",
+      "description": "Represents a user's subscription plan for the service.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Subscription."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile this subscription belongs to."
+        },
+        "planId": {
+          "type": "string",
+          "description": "Identifier for the subscription plan (e.g., 'free_family', 'guru_premium')."
+        },
+        "planName": {
+          "type": "string",
+          "description": "The human-readable name of the plan."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the subscription (e.g., 'active', 'canceled', 'past_due')."
+        },
+        "currentPeriodStart": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The start date of the current billing period."
+        },
+        "currentPeriodEnd": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The end date of the current billing period."
+        },
+        "cancelAtPeriodEnd": {
+          "type": "boolean",
+          "description": "If true, the subscription will be canceled at the end of the current period."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "planId",
+        "status",
+        "currentPeriodStart",
+        "currentPeriodEnd"
+      ]
+    },
+    "Testimonial": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Testimonial",
+      "type": "object",
+      "description": "User feedback or success stories displayed on the landing page or other promotional sections.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Testimonial entity."
+        },
+        "quote": {
+          "type": "string",
+          "description": "The actual testimonial quote from the user."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "The name of the author of the testimonial (e.g., 'Priya, Delhi')."
+        },
+        "authorUserId": {
+          "type": "string",
+          "description": "Optional reference to the UserProfile who provided the testimonial. (Relationship: UserProfile 1:N Testimonial)"
+        },
+        "authorLocation": {
+          "type": "string",
+          "description": "The location of the testimonial author (e.g., 'Delhi')."
+        },
+        "dateSubmitted": {
+          "type": "string",
+          "description": "The date and time when the testimonial was submitted.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The moderation status of the testimonial (e.g., 'Approved', 'Pending', 'Rejected')."
+        }
+      },
+      "required": [
+        "id",
+        "quote",
+        "authorName",
+        "dateSubmitted",
+        "status"
+      ]
+    },
+    "TrainingCourse": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TrainingCourse",
+      "type": "object",
+      "description": "Defines a structured curriculum for Guru training and certification.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the TrainingCourse entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the training course (e.g., 'Guru Certification Program')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the course content and objectives."
+        },
+        "durationYears": {
+          "type": "number",
+          "description": "The total duration of the course in years."
+        },
+        "targetAudience": {
+          "type": "string",
+          "description": "The intended audience for the course (e.g., 'Aspiring Gurus', 'Experienced Counselors')."
+        },
+        "courseModuleIds": {
+          "type": "array",
+          "description": "References to CourseModules that constitute this training course. (Relationship: TrainingCourse N:N CourseModule)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "durationYears"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents an individual user's profile, containing personal details, preferences, and links to family if applicable.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "familyId": {
+          "type": "string",
+          "description": "Reference to the Family this user belongs to, if any. (Relationship: Family 1:N UserProfile)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The user's last name."
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "The user's date of birth.",
+          "format": "date"
+        },
+        "gender": {
+          "type": "string",
+          "description": "The user's gender."
+        },
+        "roleInFamily": {
+          "type": "string",
+          "description": "The user's role within their family (e.g., 'पिता', 'माता', 'पुत्र', 'पुत्री')."
+        },
+        "spiritualInterestIds": {
+          "type": "array",
+          "description": "References to Religions representing the user's spiritual interests. (Relationship: UserProfile N:N Religion)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generalInterests": {
+          "type": "array",
+          "description": "A list of general interests of the user (e.g., 'Physics', 'Astronomy', 'Cricket').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "educationLevel": {
+          "type": "string",
+          "description": "The user's current education level or highest attained (e.g., '11th Grade', 'Graduate')."
+        },
+        "religiousAffiliationId": {
+          "type": "string",
+          "description": "Reference to the primary Religion the user identifies with. (Relationship: Religion 1:N UserProfile)"
+        },
+        "profileImageUrl": {
+          "type": "string",
+          "description": "URL to the user's profile image.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "dateOfBirth",
+        "gender"
       ]
     }
   },
@@ -1411,6 +1512,46 @@
             {
               "name": "goalId",
               "description": "The unique ID of the personal goal."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "Subscription",
+          "schema": {
+            "$ref": "#/backend/entities/Subscription"
+          },
+          "description": "Stores user subscription data. Nested under the user's profile. Access is restricted to the owning user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user."
+            },
+            {
+              "name": "subscriptionId",
+              "description": "The unique ID of the subscription."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/invoices/{invoiceId}",
+        "definition": {
+          "entityName": "Invoice",
+          "schema": {
+            "$ref": "#/backend/entities/Invoice"
+          },
+          "description": "Stores user invoice data. Nested under the user's profile. Access is restricted to the owning user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user."
+            },
+            {
+              "name": "invoiceId",
+              "description": "The unique ID of the invoice."
             }
           ]
         }

@@ -170,6 +170,28 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
     }
 
+    /**
+     * @description Controls access to a user's subscription data.
+     * @path /users/{userId}/subscriptions/{subscriptionId}
+     * @allow (read, write) The user managing their own subscription.
+     * @principle Enforces strict ownership within a user's private data tree.
+     */
+    match /users/{userId}/subscriptions/{subscriptionId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    /**
+     * @description Controls access to a user's invoice data.
+     * @path /users/{userId}/invoices/{invoiceId}
+     * @allow (read) The user viewing their own invoices.
+     * @deny (write) A user trying to modify their past invoices.
+     * @principle Enforces strict ownership and makes financial records immutable for users.
+     */
+    match /users/{userId}/invoices/{invoiceId} {
+      allow read: if isOwner(userId);
+      allow write: if false; // Invoices should be created by a backend process, not the user.
+    }
+
     // --------------------------------
     // Shared Family Data
     // --------------------------------

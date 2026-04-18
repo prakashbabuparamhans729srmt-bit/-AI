@@ -57,7 +57,7 @@ export function UserNav() {
             <Link href="/profile">प्रोफाइल</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-             <Link href="/wip">बिलिंग</Link>
+             <Link href="/billing">बिलिंग</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/settings">सेटिंग्स</Link>
