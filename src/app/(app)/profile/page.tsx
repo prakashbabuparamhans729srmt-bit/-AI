@@ -274,7 +274,7 @@ export default function ProfilePage() {
             <p className="text-muted-foreground">रुचियां: {userProfile?.generalInterests?.join(', ') || 'अभी कोई रुचि नहीं जोड़ी गई'}</p>
             <p className="text-muted-foreground">धर्म: {userProfile?.religiousAffiliationId || 'अभी कोई धर्म नहीं जोड़ा गया'}</p>
           </div>
-          <Button variant="outline" asChild><Link href="/wip"><Edit className="mr-2 h-4 w-4" />प्रोफाइल संपादित करें</Link></Button>
+          <Button variant="outline" asChild><Link href="/profile/edit"><Edit className="mr-2 h-4 w-4" />प्रोफाइल संपादित करें</Link></Button>
         </CardContent>
       </Card>
       
