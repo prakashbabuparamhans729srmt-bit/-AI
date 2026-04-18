@@ -206,15 +206,16 @@ export default function GuruTrainingPage() {
                     {modules && modules.map((item, index) => {
                         // Using index for mock progress data
                         const progress = Math.max(20, 100 - index * 35);
-                        const status = progress === 100 ? 'प्रमाणपत्र' : 'जारी रखें';
+                        const isCompleted = progress === 100;
+                        const status = isCompleted ? 'प्रमाणपत्र' : 'जारी रखें';
 
                         return (
                             <div key={item.id} className="space-y-3 p-4 border rounded-lg">
                                <div className="flex justify-between items-center">
                                  <h3 className="font-bold text-lg">🕉️ {item.name}</h3>
-                                 <Button variant={progress === 100 ? "secondary" : "default"} size="sm" asChild>
-                                    <Link href="/wip">
-                                      {progress === 100 && <FileText className="mr-2 h-4 w-4" />}
+                                 <Button variant={isCompleted ? "secondary" : "default"} size="sm" asChild>
+                                    <Link href={isCompleted ? '/wip' : `/guru-training/module/${item.id}`}>
+                                      {isCompleted && <FileText className="mr-2 h-4 w-4" />}
                                       {status}
                                     </Link>
                                 </Button>
