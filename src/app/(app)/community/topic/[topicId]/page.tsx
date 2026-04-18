@@ -69,17 +69,21 @@ function CommentItem({ comment }: { comment: ForumComment }) {
 
     return (
         <div className="flex gap-3">
-            <Avatar className="h-8 w-8 flex-shrink-0">
-                {isAuthorLoading ? <Loader2 className="h-full w-full animate-spin" /> : (
-                    <>
-                        <AvatarImage src={author?.profileImageUrl || `https://picsum.photos/seed/${comment.authorUserId}/100/100`} />
-                        <AvatarFallback>{author?.firstName?.charAt(0) || 'U'}</AvatarFallback>
-                    </>
-                )}
-            </Avatar>
+            <Link href={`/member/${comment.authorUserId}`} className="flex-shrink-0">
+                <Avatar className="h-8 w-8 cursor-pointer">
+                    {isAuthorLoading ? <Loader2 className="h-full w-full animate-spin" /> : (
+                        <>
+                            <AvatarImage src={author?.profileImageUrl || `https://picsum.photos/seed/${comment.authorUserId}/100/100`} />
+                            <AvatarFallback>{author?.firstName?.charAt(0) || 'U'}</AvatarFallback>
+                        </>
+                    )}
+                </Avatar>
+            </Link>
             <div className="flex-grow bg-muted/50 rounded-md px-3 py-2">
                 <div className="flex items-center gap-2">
-                    <p className="font-semibold text-sm">{isAuthorLoading ? '...' : `${author?.firstName || 'अनाम'} ${author?.lastName || ''}`}</p>
+                    <Link href={`/member/${comment.authorUserId}`} className="font-semibold text-sm hover:underline">
+                        {isAuthorLoading ? '...' : `${author?.firstName || 'अनाम'} ${author?.lastName || ''}`}
+                    </Link>
                     <p className="text-xs text-muted-foreground">{formatCommentDate(comment.createdAt)}</p>
                 </div>
                 <p className="text-sm mt-1 whitespace-pre-wrap">{comment.content}</p>
@@ -185,17 +189,21 @@ function PostItem({ post, topicId, topic }: { post: Post, topicId: string, topic
 
     return (
         <div className="flex gap-4">
-            <Avatar className="mt-1 h-10 w-10 flex-shrink-0">
-                {isAuthorLoading ? <Loader2 className="h-full w-full animate-spin" /> : (
-                    <>
-                        <AvatarImage src={author?.profileImageUrl || `https://picsum.photos/seed/${post.authorUserId}/100/100`} />
-                        <AvatarFallback>{author?.firstName?.charAt(0) || 'U'}</AvatarFallback>
-                    </>
-                )}
-            </Avatar>
+            <Link href={`/member/${post.authorUserId}`} className="flex-shrink-0 mt-1">
+                <Avatar className="h-10 w-10 cursor-pointer">
+                    {isAuthorLoading ? <Loader2 className="h-full w-full animate-spin" /> : (
+                        <>
+                            <AvatarImage src={author?.profileImageUrl || `https://picsum.photos/seed/${post.authorUserId}/100/100`} />
+                            <AvatarFallback>{author?.firstName?.charAt(0) || 'U'}</AvatarFallback>
+                        </>
+                    )}
+                </Avatar>
+            </Link>
             <div className="flex-grow">
                 <div className="flex items-center gap-2">
-                    <p className="font-semibold">{isAuthorLoading ? 'लोड हो रहा है...' : `${author?.firstName || 'अनाम'} ${author?.lastName || ''}`}</p>
+                    <Link href={`/member/${post.authorUserId}`} className="font-semibold hover:underline">
+                        {isAuthorLoading ? 'लोड हो रहा है...' : `${author?.firstName || 'अनाम'} ${author?.lastName || ''}`}
+                    </Link>
                     <p className="text-xs text-muted-foreground">{formatPostDate(post.createdAt)}</p>
                 </div>
                 <p className="mt-1 whitespace-pre-wrap">{post.content}</p>
