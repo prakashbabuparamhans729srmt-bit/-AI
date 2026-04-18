@@ -195,7 +195,7 @@ export default function CrisisCounselingPage() {
         </CardHeader>
         <CardContent className="flex justify-center gap-4">
           <Button variant="secondary" size="lg" className="bg-white text-destructive hover:bg-gray-100" asChild>
-            <Link href="/community">
+            <Link href="/crisis-counseling/chat">
               <MessageCircle className="mr-2 h-5 w-5" />
               तुरंत बात करें
             </Link>
