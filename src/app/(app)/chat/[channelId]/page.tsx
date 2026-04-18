@@ -68,6 +68,12 @@ export default function ChatPage() {
     return doc(firestore, 'users', otherParticipantId);
   }, [firestore, otherParticipantId]);
   const { data: otherParticipantProfile, isLoading: isParticipantLoading } = useDoc<UserProfile>(otherParticipantProfileRef);
+
+  const currentUserProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  const { data: currentUserProfile, isLoading: isCurrentUserLoading } = useDoc<UserProfile>(currentUserProfileRef);
   
   // --- Effects ---
 
@@ -132,7 +138,7 @@ export default function ChatPage() {
 
   // --- Render Logic ---
 
-  if (isChannelLoading || isParticipantLoading) {
+  if (isChannelLoading || isParticipantLoading || isCurrentUserLoading) {
     return <div className="flex justify-center items-center h-[80vh]"><Loader2 className="h-10 w-10 animate-spin" /></div>;
   }
 
@@ -175,8 +181,8 @@ export default function ChatPage() {
                 </div>
                  {msg.senderId === user?.uid && (
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`} />
-                    <AvatarFallback>{user?.displayName?.charAt(0) || 'A'}</AvatarFallback>
+                    <AvatarImage src={currentUserProfile?.profileImageUrl || `https://picsum.photos/seed/${user.uid}/100/100`} />
+                    <AvatarFallback>{currentUserProfile?.firstName?.charAt(0) || 'A'}</AvatarFallback>
                   </Avatar>
                 )}
               </div>
