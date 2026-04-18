@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Suspense } from 'react';
 import { useFirestore, useCollection, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, collectionGroup, where, limit, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type Topic = {
   id: string;
@@ -41,13 +41,13 @@ type UserProfile = {
   profileImageUrl?: string;
 };
 
-
-export default function CommunityPage() {
+function CommunityPageContent() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
+  const searchParams = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [registeringEventId, setRegisteringEventId] = useState<string | null>(null);
   const [remindingEventId, setRemindingEventId] = useState<string | null>(null);
 
@@ -311,5 +311,17 @@ export default function CommunityPage() {
       </Card>
 
     </div>
+  );
+}
+
+export default function CommunityPage() {
+  return (
+    <Suspense fallback={
+        <div className="flex h-[80vh] w-full items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin" />
+        </div>
+    }>
+        <CommunityPageContent />
+    </Suspense>
   );
 }

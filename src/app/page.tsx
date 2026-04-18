@@ -24,6 +24,8 @@ import { Input } from '@/components/ui/input';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 const featureList = [
   {
@@ -89,6 +91,8 @@ const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
 
 export default function Home() {
     const firestore = useFirestore();
+    const router = useRouter();
+    const [searchTerm, setSearchTerm] = useState('');
     const testimonialsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(
@@ -99,6 +103,27 @@ export default function Home() {
     }, [firestore]);
 
     const { data: testimonials, isLoading: testimonialsLoading } = useCollection<Testimonial>(testimonialsQuery);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) return;
+
+    const term = searchTerm.toLowerCase();
+
+    // Keyword-based redirection
+    if (term.includes('संकट') || term.includes('crisis') || term.includes('help')) {
+        router.push('/crisis-counseling');
+    } else if (term.includes('बच्चे') || term.includes('kids') || term.includes('कहानी') || term.includes('story')) {
+        router.push('/kids-corner');
+    } else if (term.includes('ज्ञान') || term.includes('knowledge') || term.includes('धर्म') || term.includes('religion')) {
+        router.push('/knowledge-hub');
+    } else if (term.includes('गुरु') || term.includes('guru')) {
+        router.push('/gurus');
+    } else {
+        // Default to community search
+        router.push(`/community?q=${encodeURIComponent(searchTerm)}`);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -199,14 +224,21 @@ export default function Home() {
                 </p>
               </div>
               <div className="w-full max-w-2xl pt-8">
-                <div className="relative">
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground" />
-                  <Input placeholder="धर्म, संकट, या कोई प्रश्न खोजें..." className="pl-14 pr-16 text-lg h-16 rounded-full shadow-lg" />
-                  <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full hover:bg-accent/50">
-                    <Mic className="h-7 w-7" />
-                    <span className="sr-only">बोलकर खोजें</span>
-                  </Button>
-                </div>
+                <form onSubmit={handleSearch}>
+                  <div className="relative">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground" />
+                    <Input 
+                        placeholder="धर्म, संकट, या कोई प्रश्न खोजें..." 
+                        className="pl-14 pr-16 text-lg h-16 rounded-full shadow-lg" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Button variant="ghost" size="icon" type="button" className="absolute right-2 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full hover:bg-accent/50">
+                      <Mic className="h-7 w-7" />
+                      <span className="sr-only">बोलकर खोजें</span>
+                    </Button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
