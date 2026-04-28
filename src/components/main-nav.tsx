@@ -12,6 +12,7 @@ import {
   Smile,
   Scale,
   ShieldCheck,
+  CreditCard,
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/profile', icon: <Users />, label: 'परिवार प्रोफाइल' },
   { href: '/guru-training', icon: <GraduationCap />, label: 'गुरु प्रशिक्षण' },
   { href: '/gurus', icon: <ShieldCheck />, label: 'प्रमाणित गुरु' },
+  { href: '/billing', icon: <CreditCard />, label: 'बिलिंग' },
   { href: '/settings', icon: <Settings />, label: 'सेटिंग्स' },
 ];
 

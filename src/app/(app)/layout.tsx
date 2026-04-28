@@ -15,8 +15,8 @@ import { Logo } from '@/components/logo';
 import { MainNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
 import Link from 'next/link';
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, collection, query, where } from 'firebase/firestore';
 
 type UserProfile = {
   familyId?: string;
@@ -49,6 +49,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     : (user && user.isAnonymous)
       ? 'अतिथि'
       : (family?.familyName || 'परिवार');
+      
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, `users/${user.uid}/notifications`), where('isRead', '==', false));
+  }, [firestore, user]);
+  const { data: unreadNotifications } = useCollection<{id: string}>(notificationsQuery);
+  const unreadCount = unreadNotifications?.length || 0;
 
 
   return (
@@ -80,8 +87,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex flex-1 items-center justify-end space-x-4">
               <nav className="flex items-center space-x-1">
                 <Button variant="ghost" size="icon" asChild>
-                  <Link href="/notifications">
+                  <Link href="/notifications" className="relative">
                     <Bell className="h-5 w-5" />
+                     {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                        {unreadCount}
+                      </span>
+                    )}
                     <span className="sr-only">Notifications</span>
                   </Link>
                 </Button>

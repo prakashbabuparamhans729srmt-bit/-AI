@@ -191,6 +191,16 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       allow write: if false; // Invoices should be created by a backend process, not the user.
     }
+    
+    /**
+     * @description Controls access to a user's notifications.
+     * @path /users/{userId}/notifications/{notificationId}
+     * @allow (read, write) The user managing their own notifications.
+     * @principle Enforces strict ownership within a user's private data tree.
+     */
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if isOwner(userId);
+    }
 
     // --------------------------------
     // Shared Family Data
