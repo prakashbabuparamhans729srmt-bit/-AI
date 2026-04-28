@@ -111,6 +111,25 @@ export default function DashboardPage() {
     return Math.round((completedGoals / allGoals.length) * 100);
   }, [allGoals]);
 
+  const meditationProgress = useMemo(() => {
+    if (!allGoals) return 0;
+    const meditationGoals = allGoals.filter(g => g.description.includes('ध्यान'));
+    if (meditationGoals.length === 0) return 0;
+    const completedMeditationGoals = meditationGoals.filter(g => g.status === 'Completed').length;
+    return Math.round((completedMeditationGoals / meditationGoals.length) * 100);
+  }, [allGoals]);
+
+  const dialogueProgress = useMemo(() => {
+    if (!allGoals) return 0;
+    const dialogueGoals = allGoals.filter(g => 
+        g.description.includes('संवाद') || 
+        (g.description.includes('परिवार') && g.description.includes('बात'))
+    );
+    if (dialogueGoals.length === 0) return 0;
+    const completedDialogueGoals = dialogueGoals.filter(g => g.status === 'Completed').length;
+    return Math.round((completedDialogueGoals / dialogueGoals.length) * 100);
+  }, [allGoals]);
+
 
   useEffect(() => {
     const fetchFamilyMembers = async () => {
@@ -435,12 +454,20 @@ export default function DashboardPage() {
                 )}
               </div>
               <div>
-                <Label>साप्ताहिक ध्यान: 70% (उदाहरण)</Label>
-                <Progress value={70} className="h-2" />
+                <Label>साप्ताहिक ध्यान: {areAllGoalsLoading ? '...' : `${meditationProgress}%`}</Label>
+                {areAllGoalsLoading ? (
+                  <Skeleton className="h-2 w-full" />
+                ) : (
+                  <Progress value={meditationProgress} className="h-2" />
+                )}
               </div>
               <div>
-                <Label>परिवार संवाद: 80% (उदाहरण)</Label>
-                <Progress value={80} className="h-2" />
+                <Label>परिवार संवाद: {areAllGoalsLoading ? '...' : `${dialogueProgress}%`}</Label>
+                {areAllGoalsLoading ? (
+                  <Skeleton className="h-2 w-full" />
+                ) : (
+                  <Progress value={dialogueProgress} className="h-2" />
+                )}
               </div>
             </CardContent>
             <CardFooter>
@@ -452,3 +479,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
