@@ -7,7 +7,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Puzzle, Paintbrush, Music, HelpCircle, Book, Drama, Loader2, Heart, Brain, Wind } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, where } from 'firebase/firestore';
+import { collection, query, orderBy, where, limit } from 'firebase/firestore';
 import { useMemo } from 'react';
 
 // Map activity types from Firestore to Lucide icons
@@ -39,6 +39,11 @@ type Activity = {
     type: string; // e.g., 'Puzzle', 'Coloring'
 };
 
+type ParentTip = {
+    id: string;
+    title: string;
+};
+
 const storyImage = PlaceHolderImages.find((img) => img.id === 'kids-story');
 
 export default function KidsCornerPage() {
@@ -59,6 +64,13 @@ export default function KidsCornerPage() {
     );
   }, [firestore]);
   const { data: activities, isLoading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
+
+  const parentTipsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'knowledgeArticles'), where('category', '==', 'Parents'), limit(3));
+  }, [firestore]);
+  const { data: parentTips, isLoading: parentTipsLoading } = useCollection<ParentTip>(parentTipsQuery);
+
 
   const groupedStories = useMemo(() => {
     if (!stories) return {};
@@ -146,38 +158,20 @@ export default function KidsCornerPage() {
         </CardContent>
       </Card>
 
-       <Card>
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl">🌈 रंग भरने वाले पन्ने</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
-            <div className="flex justify-center gap-4 text-5xl mb-6">
-                <span>🕉️</span>
-                <span>☪️</span>
-                <span>✝️</span>
-                <span>🯴</span>
-                <span>☸️</span>
-            </div>
-            <p className="text-muted-foreground mb-4">धार्मिक प्रतीक</p>
-            <div className="flex justify-center gap-4">
-                <Button variant="outline" asChild><Link href="/wip">पृष्ठ डाउनलोड करें</Link></Button>
-                <Button asChild><Link href="/wip">रंग भरें ऑनलाइन</Link></Button>
-            </div>
-        </CardContent>
-      </Card>
-      
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-2xl">👪 माता-पिता के लिए सुझाव</CardTitle>
         </CardHeader>
         <CardContent>
-          <h3 className="font-semibold text-lg">अपने बच्चे को धर्म कैसे सिखाएं?</h3>
-          <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
-            <li>सरल भाषा का प्रयोग करें</li>
-            <li>प्रश्न पूछने दें</li>
-            <li>उदाहरण देकर समझाएं</li>
-          </ul>
-          <Button variant="link" className="p-0 h-auto" asChild><Link href="/wip">और सुझाव पढ़ें</Link></Button>
+            {parentTipsLoading && <div className="flex justify-center p-4"><Loader2 className="h-8 w-8 animate-spin" /></div>}
+            {!parentTipsLoading && parentTips?.length === 0 && <p className="text-center text-muted-foreground p-4">अभी कोई सुझाव उपलब्ध नहीं है।</p>}
+            <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                {parentTips?.map((tip) => (
+                    <li key={tip.id}>
+                        <Link href={`/knowledge-hub/${tip.id}`} className="hover:underline hover:text-primary">{tip.title}</Link>
+                    </li>
+                ))}
+            </ul>
         </CardContent>
       </Card>
     </div>

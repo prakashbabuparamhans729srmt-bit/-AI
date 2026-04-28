@@ -249,8 +249,8 @@ export default function GuruTrainingPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center gap-4">
-                    <Button variant="default" size="lg" className="bg-white text-secondary hover:bg-gray-100" asChild><Link href="/wip">मेरा डैशबोर्ड</Link></Button>
-                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10" asChild><Link href="/wip">सहायता</Link></Button>
+                    <Button variant="default" size="lg" className="bg-white text-secondary hover:bg-gray-100" asChild><Link href="/profile">मेरा डैशबोर्ड</Link></Button>
+                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10" asChild><Link href="/community">सहायता</Link></Button>
                 </CardContent>
             </Card>
 

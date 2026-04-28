@@ -240,7 +240,7 @@ export default function KnowledgeHubPage() {
                 <p className="text-center text-muted-foreground p-4">अभी कोई वीडियो उपलब्ध नहीं है।</p>
               )}
               <div className="text-center pt-4">
-                <Button variant="outline" asChild><Link href="/wip">सभी वीडियो देखें</Link></Button>
+                <Button variant="outline" asChild><Link href="/knowledge-hub/videos">सभी वीडियो देखें</Link></Button>
               </div>
           </CardContent>
       </Card>

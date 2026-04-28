@@ -316,8 +316,8 @@ export default function DashboardPage() {
               )}
             </CardContent>
             <CardFooter className="gap-2">
-              <Button asChild><Link href="/wip">इस पर चिंतन करें</Link></Button>
-              <Button variant="secondary" asChild><Link href="/wip">साझा करें</Link></Button>
+              <Button asChild><Link href="/community/new">इस पर चिंतन करें</Link></Button>
+              <Button variant="secondary" asChild><Link href="/community">साझा करें</Link></Button>
             </CardFooter>
           </Card>
 
@@ -490,7 +490,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full" asChild><Link href="/wip">सुधार के सुझाव</Link></Button>
+              <Button variant="secondary" className="w-full" asChild><Link href="/profile">सुधार के सुझाव</Link></Button>
             </CardFooter>
           </Card>
         </div>
