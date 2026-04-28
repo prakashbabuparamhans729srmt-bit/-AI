@@ -51,6 +51,7 @@ type UserProfile = {
   spiritualInterestIds?: string[];
   generalInterests?: string[];
   religiousAffiliationId?: string;
+  familyId?: string;
 }
 
 export default function DashboardPage() {
@@ -77,14 +78,15 @@ export default function DashboardPage() {
     if (!user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
-  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   // Get family document to find memberUserIds
   const familyRef = useMemoFirebase(() => {
+    // Check if userProfile and familyId exist
     if (!userProfile?.familyId) return null;
     return doc(firestore, 'families', userProfile.familyId);
   }, [firestore, userProfile]);
-  const { data: family } = useDoc<any>(familyRef);
+  const { data: family, isLoading: isFamilyDocLoading } = useDoc<any>(familyRef);
 
   // Query for active goals to display in the schedule
   const activeGoalsQuery = useMemoFirebase(() => {
@@ -133,16 +135,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchFamilyMembers = async () => {
+      setIsFamilyLoading(true);
       if (!family?.memberUserIds || !firestore) {
-        // If user is guest or alone, populate family members with just their profile
-        if (userProfile) {
-            setFamilyMembers([userProfile]);
-        }
+        setFamilyMembers([]); // Set to empty array if no family
         setIsFamilyLoading(false);
         return;
       }
       
-      setIsFamilyLoading(true);
       try {
         const memberPromises = family.memberUserIds.map((memberId: string) => 
           getDoc(doc(firestore, 'users', memberId))
@@ -154,21 +153,32 @@ export default function DashboardPage() {
         setFamilyMembers(membersData);
       } catch (error) {
         console.error("Error fetching family members:", error);
+        setFamilyMembers([]); // Also set to empty on error
       } finally {
         setIsFamilyLoading(false);
       }
     };
 
-    fetchFamilyMembers();
-  }, [family, firestore, userProfile]);
+    if (!isFamilyDocLoading) {
+      fetchFamilyMembers();
+    }
+  }, [family, firestore, isFamilyDocLoading]);
+
 
   useEffect(() => {
     const fetchWisdom = async () => {
-      if (!userProfile || isFamilyLoading || familyMembers.length === 0) {
-        // Don't fetch if profile or family isn't ready
+      if (!userProfile || isFamilyLoading) {
         return;
       }
-      
+       
+      // Use family members if available, otherwise just use the single user's profile
+      const membersToUseForWisdom = familyMembers.length > 0 ? familyMembers : (userProfile ? [userProfile] : []);
+
+      if (membersToUseForWisdom.length === 0) {
+          setIsWisdomLoading(false);
+          return;
+      }
+
       setIsWisdomLoading(true);
       try {
         const calculateAge = (dob: string | undefined) => {
@@ -181,7 +191,7 @@ export default function DashboardPage() {
             }
         };
 
-        const familyMembersForApi = familyMembers.map(m => {
+        const familyMembersForApi = membersToUseForWisdom.map(m => {
             const interests = [...(m.spiritualInterestIds || []), ...(m.generalInterests || [])];
             return {
                 name: m.firstName,
@@ -380,27 +390,36 @@ export default function DashboardPage() {
           {/* Family Members */}
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-2xl">👪 परिवार के सदस्य ({familyMembers.length || 0})</CardTitle>
+              <CardTitle className="font-headline text-2xl">👪 परिवार के सदस्य</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              {isFamilyLoading ? (
-                <>
-                  <div className="flex flex-col items-center space-y-2"><Skeleton className="h-20 w-20 rounded-full" /><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></div>
-                  <div className="flex flex-col items-center space-y-2"><Skeleton className="h-20 w-20 rounded-full" /><Skeleton className="h-4 w-20" /><Skeleton className="h-3 w-16" /></div>
-                </>
-              ) : ( familyMembers.map((member) => (
-                  <div key={member.id} className="flex flex-col items-center text-center space-y-2">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage src={member.profileImageUrl || `https://picsum.photos/seed/${member.id}/200/200`} alt={member.firstName || 'User'} />
-                      <AvatarFallback>{member.firstName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-                    </Avatar>
-                    <p className="font-semibold">{member.firstName}</p>
-                    <p className="text-xs text-muted-foreground">{member.roleInFamily || 'सदस्य'}</p>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/member/${member.id}`}>देखें</Link>
-                    </Button>
-                  </div>
-                ))
+            <CardContent>
+              {isProfileLoading || isFamilyLoading ? (
+                <div className="flex justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : family && familyMembers.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {familyMembers.map((member) => (
+                    <div key={member.id} className="flex flex-col items-center text-center space-y-2">
+                      <Avatar className="h-20 w-20">
+                        <AvatarImage src={member.profileImageUrl || `https://picsum.photos/seed/${member.id}/200/200`} alt={member.firstName || 'User'} />
+                        <AvatarFallback>{member.firstName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                      </Avatar>
+                      <p className="font-semibold">{member.firstName}</p>
+                      <p className="text-xs text-muted-foreground">{member.roleInFamily || 'सदस्य'}</p>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/member/${member.id}`}>देखें</Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-4">
+                  <p className="text-muted-foreground mb-4">आप अभी तक किसी परिवार का हिस्सा नहीं हैं।</p>
+                  <Button asChild>
+                    <Link href="/profile">अपना परिवार बनाएं</Link>
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
