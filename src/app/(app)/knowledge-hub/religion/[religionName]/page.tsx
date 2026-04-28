@@ -36,9 +36,8 @@ export default function ReligionArticlesPage() {
 
   const articlesQuery = useMemoFirebase(() => {
     if (!firestore || !religionName) return null;
-    // We assume that the English religion name is present in the topicTags
-    // for filtering purposes. This is a simplification.
-    return query(collection(firestore, 'knowledgeArticles'), where('topicTags', 'array-contains', religionName));
+    // Filter articles where the religionIds array contains the current religion name (ID).
+    return query(collection(firestore, 'knowledgeArticles'), where('religionIds', 'array-contains', religionName));
   }, [firestore, religionName]);
 
   const { data: articles, isLoading } = useCollection<Article>(articlesQuery);
