@@ -50,7 +50,7 @@ const featureList = [
     icon: <HeartHandshake className="h-8 w-8" />,
     title: 'ध्यान और योग',
     description: 'शांति और मानसिक स्पष्टता के लिए निर्देशित ध्यान और योग सत्र।',
-    href: '/wip'
+    href: '/meditation-yoga'
   },
   {
     icon: <Users className="h-8 w-8" />,

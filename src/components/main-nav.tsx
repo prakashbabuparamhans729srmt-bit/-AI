@@ -13,6 +13,7 @@ import {
   Scale,
   ShieldCheck,
   CreditCard,
+  Wind,
 } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ const navItems = [
   { href: '/knowledge-hub', icon: <Library />, label: 'धर्म ज्ञान केंद्र' },
   { href: '/rules', icon: <Scale />, label: 'नियम संहिता' },
   { href: '/crisis-counseling', icon: <HeartPulse />, label: 'संकट परामर्श' },
+  { href: '/meditation-yoga', icon: <Wind />, label: 'ध्यान और योग' },
   { href: '/kids-corner', icon: <Smile />, label: 'बच्चों का कोना' },
   { href: '/community', icon: <MessageCircle />, label: 'सामुदायिक मंच' },
   { href: '/profile', icon: <Users />, label: 'परिवार प्रोफाइल' },
