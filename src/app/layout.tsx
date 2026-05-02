@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="https://picsum.photos/seed/kulguru-logo/180/180" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
         <ThemeProvider

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -345,7 +346,7 @@ export default function Home() {
               ऐप डाउनलोड करें
             </h2>
             <p className="mx-auto max-w-[600px] text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed mt-4">
-              आज ही अपनी आध्यात्मिक यात्रा शुरू करें।
+              आज ही अपनी आध्यात्मिक यात्रा शुरू करें और अपने डिवाइस पर कुलगुरु AI इंस्टॉल करें।
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Button size="lg" variant="outline" asChild>
@@ -383,13 +384,13 @@ export default function Home() {
           </p>
           <nav className="flex gap-4 sm:gap-6">
             <Link
-              href="/wip"
+              href="/knowledge-hub"
               className="text-sm hover:underline underline-offset-4"
             >
               हमारे बारे में
             </Link>
             <Link
-              href="/wip"
+              href="/crisis-counseling"
               className="text-sm hover:underline underline-offset-4"
             >
               सहायता
@@ -401,7 +402,7 @@ export default function Home() {
               गोपनीयता
             </Link>
             <Link
-              href="/wip"
+              href="/community"
               className="text-sm hover:underline underline-offset-4"
             >
               संपर्क
