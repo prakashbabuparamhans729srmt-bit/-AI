@@ -273,7 +273,7 @@ export default function GuruTrainingPage() {
                                <div className="flex justify-between items-center">
                                  <h3 className="font-bold text-lg">🕉️ {item.name}</h3>
                                  <Button variant={isCompleted ? "secondary" : "default"} size="sm" asChild>
-                                    <Link href={isCompleted ? '/wip' : `/guru-training/module/${item.id}`}>
+                                    <Link href={isCompleted ? `/guru-training/certificate/${item.id}` : `/guru-training/module/${item.id}`}>
                                       {isCompleted && <FileText className="mr-2 h-4 w-4" />}
                                       {status}
                                     </Link>
