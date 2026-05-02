@@ -99,7 +99,7 @@ export default function KidsCornerPage() {
         )}
         <div className="relative p-8 md:p-12 space-y-4">
             <div className="text-yellow-300 text-4xl">⭐⭐⭐⭐⭐</div>
-            <h2 className="text-3xl font-bold font-headline">आज की कहानी: {storiesLoading ? 'लोड हो रहा है...' : featuredStory?.title || 'ईमानदार लकड़हारा'}</h2>
+            <h2 className="text-3xl font-bold font-headline">आज की कहानी: {storiesLoading ? 'लोड हो रहा है...' : featuredStory?.title || 'कहानी लोड हो रही है'}</h2>
             {storiesLoading && <Loader2 className="mx-auto h-8 w-8 animate-spin" />}
             {!storiesLoading && featuredStory && <p className="max-w-2xl mx-auto">{featuredStory.moralLesson}</p>}
             <div className="flex justify-center gap-4">
