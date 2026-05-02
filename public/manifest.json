@@ -1,6 +1,6 @@
 {
-  "name": "कुलगुरु AI - हर परिवार का अपना कुलगुरु",
-  "short_name": "कुलगुरु AI",
+  "name": "कुलगुरु AI",
+  "short_name": "कुलगुरु",
   "description": "धर्म, तर्क और विज्ञान का संगम - अब आपके घर पर।",
   "start_url": "/",
   "display": "standalone",
@@ -19,7 +19,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "orientation": "portrait",
-  "scope": "/"
+  ]
 }
