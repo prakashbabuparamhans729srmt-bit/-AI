@@ -97,7 +97,6 @@ export default function Home() {
         if (!firestore) return null;
         return query(
         collection(firestore, 'public_testimonials'),
-        where('status', '==', 'Approved'),
         limit(2)
         );
     }, [firestore]);
