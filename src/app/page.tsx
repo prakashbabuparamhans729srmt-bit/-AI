@@ -12,7 +12,6 @@ import {
   Bot,
   Search,
   Mic,
-  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,7 +20,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Logo } from '@/components/logo';
 import { Input } from '@/components/ui/input';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -77,7 +76,6 @@ const staticTestimonials = [
     text: 'बच्चों को संस्कार मिल रहे हैं और धर्म का सही ज्ञान भी। यह ऐप हर भारतीय परिवार के लिए एक वरदान है।',
   },
 ];
-
 
 type Testimonial = {
     id: string;

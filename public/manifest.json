@@ -1,7 +1,7 @@
 {
   "name": "कुलगुरु AI",
   "short_name": "कुलगुरु",
-  "description": "धर्म, तर्क और विज्ञान का संगम - हर परिवार का अपना कुलगुरु",
+  "description": "हर परिवार का अपना कुलगुरु - धर्म, तर्क और विज्ञान का संगम।",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F8F4E9",
@@ -17,7 +17,7 @@
       "src": "https://picsum.photos/seed/kulguru-logo/512/512",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
