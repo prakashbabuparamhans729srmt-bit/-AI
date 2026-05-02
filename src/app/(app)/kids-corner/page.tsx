@@ -105,7 +105,7 @@ export default function KidsCornerPage() {
             <div className="flex justify-center gap-4">
                 <Button asChild><Link href={featuredStory ? `/story/${featuredStory.id}` : '#'}>कहानी सुनें</Link></Button>
                 <Button variant="secondary" asChild><Link href={featuredStory ? `/story/${featuredStory.id}` : '#'}>खुद पढ़ें</Link></Button>
-                <Button variant="outline" className="text-white border-white" asChild><Link href="#activities">रंग भरें</Link></Button>
+                <Button variant="outline" className="text-white border-white" asChild><Link href="#activities">खेल खेलें</Link></Button>
             </div>
         </div>
       </Card>
