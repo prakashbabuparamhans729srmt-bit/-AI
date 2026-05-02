@@ -128,7 +128,7 @@ export default function KidsCornerPage() {
             </Card>
             </Link>
           ))}
-           {!activitiesLoading && activities?.length === 0 && (
+           {!activitiesLoading && (!activities || activities.length === 0) && (
                 <p className="col-span-full text-center text-muted-foreground p-4">अभी कोई गतिविधि उपलब्ध नहीं है।</p>
            )}
         </CardContent>

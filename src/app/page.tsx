@@ -106,7 +106,7 @@ export default function Home() {
 
     const term = searchTerm.toLowerCase();
 
-    // Keyword-based redirection
+    // Keyword-based redirection for A to Z flow
     if (term.includes('संकट') || term.includes('crisis') || term.includes('help')) {
         router.push('/crisis-counseling');
     } else if (term.includes('बच्चे') || term.includes('kids') || term.includes('कहानी') || term.includes('story')) {

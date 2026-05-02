@@ -22,7 +22,7 @@ const quickServices = [
   { icon: <MessageSquare className="h-8 w-8" />, label: 'प्रश्न पूछें', href: '/community' },
   { icon: <HeartPulse className="h-8 w-8" />, label: 'संकट परामर्श', href: '/crisis-counseling' },
   { icon: <Sparkles className="h-8 w-8" />, label: 'आज की कथा', href: '/kids-corner' },
-  { icon: <BookOpen className="h-8 w-8" />, label: 'धर्म ग्रंथ अध्ययन', href: '/knowledge-hub' },
+  { icon: <BookOpen className="h-8 w-8" />, label: 'धर्म ज्ञान केंद्र', href: '/knowledge-hub' },
   { icon: <Hand className="h-8 w-8" />, label: 'संस्कार मार्गदर्शन', href: '/rules' },
   { icon: <Users className="h-8 w-8" />, label: 'बच्चों के लिए विशेष', href: '/kids-corner' },
 ];
@@ -321,7 +321,7 @@ export default function DashboardPage() {
             </CardFooter>
           </Card>
 
-          {/* Quick Services */}
+          {/* Quick Services - A to Z Flow Connectors */}
           <div>
             <h2 className="text-2xl font-bold font-headline mb-4">🔍 त्वरित सेवाएं</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -498,5 +498,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
