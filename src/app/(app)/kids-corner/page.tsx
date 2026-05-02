@@ -103,8 +103,8 @@ export default function KidsCornerPage() {
             {storiesLoading && <Loader2 className="mx-auto h-8 w-8 animate-spin" />}
             {!storiesLoading && featuredStory && <p className="max-w-2xl mx-auto">{featuredStory.moralLesson}</p>}
             <div className="flex justify-center gap-4">
-                <Button asChild><Link href={featuredStory ? `/story/${featuredStory.id}` : '/wip'}>कहानी सुनें</Link></Button>
-                <Button variant="secondary" asChild><Link href={featuredStory ? `/story/${featuredStory.id}` : '/wip'}>खुद पढ़ें</Link></Button>
+                <Button asChild><Link href={featuredStory ? `/story/${featuredStory.id}` : '#'}>कहानी सुनें</Link></Button>
+                <Button variant="secondary" asChild><Link href={featuredStory ? `/story/${featuredStory.id}` : '#'}>खुद पढ़ें</Link></Button>
                 <Button variant="outline" className="text-white border-white" asChild><Link href="#activities">रंग भरें</Link></Button>
             </div>
         </div>
