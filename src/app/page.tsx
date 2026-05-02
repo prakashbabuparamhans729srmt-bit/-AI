@@ -10,7 +10,6 @@ import {
   Sparkles,
   LifeBuoy,
   Bot,
-  Smile,
   Search,
   Mic,
   Loader2,
@@ -171,7 +170,7 @@ export default function Home() {
                   <Link href="/register">निःशुल्क पंजीकरण करें</Link>
                 </Button>
                 <Button size="lg" variant="secondary" asChild>
-                  <Link href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">वीडियो देखें</Link>
+                  <Link href="/knowledge-hub/videos">वीडियो देखें</Link>
                 </Button>
               </div>
             </div>

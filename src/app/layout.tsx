@@ -35,6 +35,8 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <meta name="theme-color" content="#FF4F00" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="https://picsum.photos/seed/kulguru-logo/180/180" />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
         <ThemeProvider
